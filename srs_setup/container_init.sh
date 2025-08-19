@@ -13,7 +13,7 @@ pip install --upgrade pip setuptools wheel setuptools_scm jinja2 ninja
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
 
 # export VLLM_COMMIT=6d8d0a24c02bfd84d46b3016b865a44f048ae84b 
-# export VLLM_PRECOMPILED_WHEEL_LOCATION=https://wheels.vllm.ai/vllm-0.10.0-cp38-abi3-manylinux1_x86_64.whl
+# export VLLM_PRECOMPILED_WHEEL_LOCATION= https://wheels.vllm.ai/0.10.1/vllm-0.10.1-cp38-abi3-manylinux1_x86_64.whl
 
 VLLM_USE_PRECOMPILED=1 uv pip install --system --editable /vllm-workspace/vllm
 
