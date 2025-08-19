@@ -1,6 +1,6 @@
 {
     "name": "vLLM Editable Container",
-    "image": "vllm/vllm-openai:v0.10.0",
+    "image": "vllm/vllm-openai:v0.10.1",
     "workspaceFolder": "/vllm-workspace",
     "mounts": [
         "source=${localWorkspaceFolder}/vllm,target=/vllm-workspace/vllm,type=bind",
