@@ -1,0 +1,15 @@
+{
+    "name": "vLLM Editable Container",
+    "image": "vllm/vllm-openai:v0.10.0",
+    "workspaceFolder": "/vllm-workspace",
+    "mounts": [
+        "source=${localWorkspaceFolder}/vllm,target=/vllm-workspace/vllm,type=bind",
+        "source=${env:HOME}/.ssh,target=/root/.ssh,type=bind"
+    ],
+    "postStartCommand": "bash /vllm-workspace/vllm/srs_setup/container_init.sh",
+    "remoteUser": "root",
+    "runArgs": [
+        "--gpus=all",
+        "--shm-size=48g"
+    ]
+}
