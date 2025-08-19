@@ -540,6 +540,26 @@ class Scheduler(SchedulerInterface):
                 self.kv_cache_manager.get_num_common_prefix_blocks(
                     any_request, len(self.running)))
 
+        # ########## Add log by srs: Batch info ##########
+        # # Count total scheduled requests (new + resumed + running)
+        # total_scheduled_reqs = len(scheduled_new_reqs) + len(scheduled_resumed_reqs) + len(scheduled_running_reqs)
+        # # Current real-time batch size (active requests in running queue)
+        # current_batch_size = len(self.running)
+        # # Number of finished requests in this scheduling round
+        # finished_reqs_count = len(self.finished_req_ids)
+        
+        # logger.info(
+        #     "Scheduler: Scheduling round completed | Total scheduled requests=%d (new=%d, resumed=%d, running=%d) | "
+        #     "Current active batch size=%d | Finished requests in round=%d",
+        #     total_scheduled_reqs,
+        #     len(scheduled_new_reqs),
+        #     len(scheduled_resumed_reqs),
+        #     len(scheduled_running_reqs),
+        #     current_batch_size,
+        #     finished_reqs_count
+        # )
+        # ####################################################################
+
         grammar_bitmask = self.structured_output_manager.grammar_bitmask(
             self.requests,
             structured_output_request_ids,
