@@ -1,7 +1,5 @@
 #!/bin/bash
 
-CONTAINER_NAME="vllm-editable-manual"
-
 IMAGE="vllm/vllm-openai:v0.10.1"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -12,9 +10,7 @@ SHM_SIZE="48g"
 CPUSET_CPUS="16-31"
 CPUSET_MEMS="1"
 
-docker rm -f $CONTAINER_NAME 2>/dev/null || true
-
-docker run -d --name $CONTAINER_NAME \
+docker run -d \
     --gpus '"device=2,3"' \
     --shm-size=$SHM_SIZE \
     --cpuset-cpus=$CPUSET_CPUS \

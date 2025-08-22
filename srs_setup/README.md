@@ -5,7 +5,7 @@ If multiple GPUs need to be bound to the container, use this manual method to av
 1. Clone the repository: `git clone https://github.com/moyiii-ai/vllm.git`
 2. Run the setup script directly: `./vllm/srs_setup/start_vllm_container.sh`
 3. Connect to the running container:
-* Either via Docker exec: docker exec -it vllm-editable-manual bash
+* Either via Docker exec: docker exec -it <container_name> bash
 * Or through VS Code: Use "Dev Containers: Attach to Running Container" and select the container
 4. Initialize the environment inside the container: `/vllm-workspace/vllm/srs_setup/container_init.sh`
 
