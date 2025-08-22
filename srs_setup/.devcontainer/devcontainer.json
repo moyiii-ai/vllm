@@ -8,6 +8,22 @@
     ],
     "postStartCommand": "bash /vllm-workspace/vllm/srs_setup/container_init.sh",
     "remoteUser": "root",
+    // "overrideCommand": true,
+    // "customizations": {
+    //     "vscode": {
+    //         "settings": {
+    //             "dev.containers.gpuAvailability": "none",
+    //             "dev.containers.defaultGpuSupport": "disabled"
+    //         }
+    //     }
+    // },
+    // Can only bind 1 GPU here; binding 2 or 3 will conflict with Dev Container's automatic GPU detection
+    // "runArgs": [
+    //     "--gpus=device=2",
+    //     "--shm-size=48g",
+    //     "--cpuset-cpus=16-31",
+    //     "--cpuset-mems=1"
+    // ]
     "runArgs": [
         "--gpus=all",
         "--shm-size=48g"
