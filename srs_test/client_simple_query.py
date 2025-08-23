@@ -10,7 +10,7 @@ client = OpenAI(
 models = client.models.list()
 model = models.data[0].id
 
-tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B")
+tokenizer = AutoTokenizer.from_pretrained(model)
 question = "Hello, I'm a simple query."
 
 prompt = question

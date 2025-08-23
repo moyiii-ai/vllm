@@ -19,8 +19,8 @@ with open("random_text.txt", "r") as f:
 # use more of the long context
 long_context = long_context[:15000]
 
-tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B")
-question = "Summarize bash in 2 sentences."
+tokenizer = AutoTokenizer.from_pretrained(model)
+question = "Summarize the text in 2 sentences."
 
 prompt = f"{long_context}\n\n{question}"
 
