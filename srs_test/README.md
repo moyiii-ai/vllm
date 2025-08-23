@@ -4,14 +4,15 @@ This document provides a categorized overview of scripts for starting vLLM serve
 
 ## vLLM Server Startup Scripts
 
-All server-related scripts start with the prefix server, and are used to initialize vLLM servers with different configurations:
+All server-related scripts start with the prefix `server`, and are used to initialize vLLM servers with different configurations:
 
 1. server_tp.sh
 2. server_lmcache.sh
 3. server_tp_lmcache.sh
+4. server_dp_lmcache.sh
 
 ## vLLM Client Startup Scripts
-All client-related scripts begin with the prefix client, and are used to interact with the running vLLM server:
+All client-related scripts begin with the prefix `client`, and are used to interact with the running vLLM server:
 1. client_query_twice.py
 2. client_long_doc.py
 
