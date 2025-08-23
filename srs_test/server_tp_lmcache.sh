@@ -7,8 +7,7 @@ export LMCACHE_MAX_LOCAL_CPU_SIZE=5.0
 export LMCACHE_USE_EXPERIMENTAL=True
 
 vllm serve \
-    Qwen/Qwen-7B \
-    --max-model-len 8192 \
+    meta-llama/Llama-3.1-8B \
+    --tensor-parallel-size 2 \
     --kv-transfer-config \
-    '{"kv_connector":"LMCacheConnectorV1", "kv_role":"kv_both"}' \
-    --trust-remote-code
+    '{"kv_connector":"LMCacheConnectorV1", "kv_role":"kv_both"}'

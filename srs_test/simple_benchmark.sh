@@ -1,13 +1,12 @@
 #!/bin/bash
 
-MODEL_NAME="Qwen/Qwen1.5-MoE-A2.7B"
+MODEL_NAME="meta-llama/Llama-3.1-8B"
 HOST="0.0.0.0"
 PORT=8000
 
 vllm serve $MODEL_NAME \
   --host $HOST \
-  --port $PORT \
-  --trust-remote-code > server.log 2>&1 &
+  --port $PORT > server.log 2>&1 &
 
 SERVER_PID=$!
 echo $SERVER_PID > server.pid
