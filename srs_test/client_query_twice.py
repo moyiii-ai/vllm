@@ -10,8 +10,6 @@ client = OpenAI(
 models = client.models.list()
 model = models.data[0].id
 
-# 119512 characters total
-# 26054 tokens total
 long_context = ""
 with open("random_text.txt", "r") as f:
     long_context = f.read()
