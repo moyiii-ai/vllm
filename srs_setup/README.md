@@ -24,7 +24,6 @@ For environments without GPU binding requirements, use VS Code's automatic Dev C
 ## Steps to run vLLM
 
 1. Set Up the Hugging Face Token: `echo 'export HUGGING_FACE_HUB_TOKEN=hf_xxx' >> ~/.bashrc && source ~/.bashrc`. 
-
-Note: If you plan to use Llama-series models, you must first apply for access to the model on Hugging Face. After approval, update your token’s permissions: Go to Settings > Access Tokens > edit access token permissions, then in the Repository permissions section, explicitly add the Llama model repository.
+  Note: If you plan to use Llama-series models, you must first apply for access to the model on Hugging Face. After approval, update your token’s permissions: Go to Settings > Access Tokens > edit access token permissions, then in the Repository permissions section, explicitly add the Llama model repository.
 2. Navigate to the vLLM test directory: `cd vllm/srs_test`
 3. Run the relevant scripts or commands
