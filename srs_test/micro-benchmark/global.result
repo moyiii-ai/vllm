@@ -1,0 +1,44 @@
+Compiling benchmark_global.cu for compute_80/sm_80 ...
+Running benchmark...
+=== Bidirectional Write (various sizes) ===
+Write: dev0->dev1 | Size = 1 MB | Bandwidth = 22.0319 GB/s
+Write: dev1->dev0 | Size = 1 MB | Bandwidth = 22.03 GB/s
+Write: dev0->dev1 | Size = 8 MB | Bandwidth = 21.7054 GB/s
+Write: dev1->dev0 | Size = 8 MB | Bandwidth = 21.7027 GB/s
+Write: dev0->dev1 | Size = 64 MB | Bandwidth = 21.6694 GB/s
+Write: dev1->dev0 | Size = 64 MB | Bandwidth = 21.6668 GB/s
+Write: dev0->dev1 | Size = 256 MB | Bandwidth = 21.6623 GB/s
+Write: dev1->dev0 | Size = 256 MB | Bandwidth = 21.6638 GB/s
+=== Bidirectional Read  (various sizes) ===
+Read: dev0<-dev1 | Size = 1 MB | Bandwidth = 21.8824 GB/s
+Read: dev1<-dev0 | Size = 1 MB | Bandwidth = 21.8946 GB/s
+Read: dev0<-dev1 | Size = 8 MB | Bandwidth = 21.8915 GB/s
+Read: dev1<-dev0 | Size = 8 MB | Bandwidth = 21.8959 GB/s
+Read: dev0<-dev1 | Size = 64 MB | Bandwidth = 21.8928 GB/s
+Read: dev1<-dev0 | Size = 64 MB | Bandwidth = 21.8934 GB/s
+Read: dev0<-dev1 | Size = 256 MB | Bandwidth = 21.8901 GB/s
+Read: dev1<-dev0 | Size = 256 MB | Bandwidth = 21.8932 GB/s
+
+
+=== Bidirectional Write (All-Reduce decode sizes) ===
+Write: dev0->dev1 | Size = 0.0078125 MB | Bandwidth = 19.9501 GB/s
+Write: dev1->dev0 | Size = 0.0078125 MB | Bandwidth = 20.6186 GB/s
+Write: dev0->dev1 | Size = 0.0625 MB | Bandwidth = 24.9124 GB/s
+Write: dev1->dev0 | Size = 0.0625 MB | Bandwidth = 25.1671 GB/s
+=== Bidirectional Read  (All-Reduce decode sizes) ===
+Read: dev0<-dev1 | Size = 0.0078125 MB | Bandwidth = 5.83729 GB/s
+Read: dev1<-dev0 | Size = 0.0078125 MB | Bandwidth = 5.82666 GB/s
+Read: dev0<-dev1 | Size = 0.0625 MB | Bandwidth = 21.9216 GB/s
+Read: dev1<-dev0 | Size = 0.0625 MB | Bandwidth = 21.9103 GB/s
+
+
+=== Bidirectional Write (All-Reduce prefill sizes) ===
+Write: dev0->dev1 | Size = 8 MB | Bandwidth = 21.7094 GB/s
+Write: dev1->dev0 | Size = 8 MB | Bandwidth = 21.7042 GB/s
+Write: dev0->dev1 | Size = 16 MB | Bandwidth = 21.6915 GB/s
+Write: dev1->dev0 | Size = 16 MB | Bandwidth = 21.693 GB/s
+=== Bidirectional Read  (All-Reduce prefill sizes) ===
+Read: dev0<-dev1 | Size = 8 MB | Bandwidth = 21.8935 GB/s
+Read: dev1<-dev0 | Size = 8 MB | Bandwidth = 21.8963 GB/s
+Read: dev0<-dev1 | Size = 16 MB | Bandwidth = 21.8938 GB/s
+Read: dev1<-dev0 | Size = 16 MB | Bandwidth = 21.8936 GB/s
