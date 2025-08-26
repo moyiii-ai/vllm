@@ -1,4 +1,3 @@
-// benchmark_global_ldst_v4.cu
 // Bidirectional P2P benchmark using SM-driven ld/st.volatile.global.v4.u32
 // - Keeps previous "various sizes" bidirectional read/write tests
 // - Adds whole-pass warm-up (run entire suite once, discard), then measured pass
