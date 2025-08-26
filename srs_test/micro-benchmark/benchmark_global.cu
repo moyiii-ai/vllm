@@ -1,16 +1,8 @@
 // Bidirectional P2P benchmark using SM-driven ld/st.volatile.global.v4.u32
-// - Keeps previous "various sizes" bidirectional read/write tests
-// - Adds whole-pass warm-up (run entire suite once, discard), then measured pass
-// - Adds "All-Reduce-like" sizes (prefill/decode) and measures bidirectional read/write
-//
-// Build example (A100):
-//   nvcc -O2 -arch=compute_80 -code=sm_80 -o benchmark_global_ldst_v4 benchmark_global_ldst_v4.cu
-//
-// Notes:
-// - This benchmark uses inline PTX vectorized 16B loads/stores to better mimic NCCL's style.
-// - Uses UVA + peer access; each GPU has two local buffers: send (source) and recv (destination).
-// - Each kernel loops with "repeat" to increase runtime and stabilize timing.
-// - We accumulate a checksum and use memory clobbers to avoid DCE and force real traffic.
+// - Measures read/write bandwidth for various sizes and All-Reduce-like patterns (decode/prefill)
+// - Uses inline PTX 16B vectorized load/store to mimic NCCL behavior
+// - Requires UVA + peer access; each GPU has send (source) and recv (destination) buffers
+// - Kernels loop with 'repeat' to stabilize timing; checksum prevents compiler optimization
 
 #include <cuda_runtime.h>
 #include <iostream>
