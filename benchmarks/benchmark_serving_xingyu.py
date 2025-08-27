@@ -1077,7 +1077,10 @@ def main(args: argparse.Namespace):
             if args.max_concurrency is not None
             else ""
         )
-        file_name = f"{backend}-{args.request_rate}qps{max_concurrency_str}-{base_model_id}.json"  # noqa
+        if args.port:
+            file_name = f"{backend}-{args.request_rate}qps{max_concurrency_str}-{base_model_id}-{args.port}.json"
+        else:
+            file_name = f"{backend}-{args.request_rate}qps{max_concurrency_str}-{base_model_id}.json"
         if args.result_filename:
             file_name = args.result_filename
         if args.result_dir:
