@@ -2,6 +2,17 @@
 
 This document provides a categorized overview of scripts for starting vLLM servers, clients, and other auxiliary tasks.
 
+## Scenario 2: Test Execution Steps
+1. Start the vLLM server
+    * For a single-CPU/no-DP scenario, use `server_lmcache.sh`.
+    * For DP + LMCache, use `server_dp_lmcache.sh`.
+    * Keep the server running until all tests are completed.
+2. Warmup
+Run `client_benchmark_warmup.sh` and wait for it to finish.
+3. Start the tests
+    * If you want to measure PCIe counters for each QPS, run `client_benchmark_single.sh` and adjust the request rate for each run.
+    * If you want to rerun all tests in one command, run `client_benchmark_multiple.sh`.
+
 ## vLLM Server Startup Scripts
 
 All server-related scripts start with the prefix `server`, and are used to initialize vLLM servers with different configurations:
