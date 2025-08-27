@@ -5,26 +5,36 @@ MODEL="meta-llama/Llama-3.1-8B"
 DATASET_NAME="longbench"
 DATASET_PATH="narrativeqa.jsonl"
 BENCHMARK_SCRIPT="../benchmarks/benchmark_serving_xingyu.py"
-START_RATE=0.2       # Starting request rate
-END_RATE=2.0         # Ending request rate
-NUM_RUNS=10          # Number of runs (from start to end)
 
-# Calculate step size between request rates
-STEP=$(echo "scale=4; ($END_RATE - $START_RATE) / ($NUM_RUNS - 1)" | bc)
+# Hardcoded list of request rates (adjust these values as needed)
+# Example: covering a range from 0.5 to 15 with varying step sizes
+REQUEST_RATES=(
+    0.4   
+    0.8
+    1.2
+    1.6
+    2.0
+    2.4
+    2.8
+    3.2
+    3.6
+    4.0
+)
 
-echo "Starting $NUM_RUNS benchmark runs with request rates from $START_RATE to $END_RATE..."
-echo "Step size: $STEP"
+# Calculate total number of runs from the list length
+NUM_RUNS=${#REQUEST_RATES[@]}
 
-# Run benchmarks with different request rates
+echo "Starting $NUM_RUNS benchmark runs with custom request rates..."
+echo "Request rates to test: ${REQUEST_RATES[*]}"
+echo ""
+
+# Run benchmarks for each request rate in the list
 for ((i=0; i<NUM_RUNS; i++)); do
-    # Calculate current request rate
-    CURRENT_RATE=$(echo "scale=4; $START_RATE + ($i * $STEP)" | bc)
-    
-    # Round to 1 decimal place for cleaner values (optional)
-    CURRENT_RATE=$(printf "%.1f" $CURRENT_RATE)
+    CURRENT_RATE=${REQUEST_RATES[$i]}
+    RUN_NUM=$((i+1))
     
     echo "============================================="
-    echo "Starting benchmark run $((i+1))/$NUM_RUNS"
+    echo "Starting benchmark run $RUN_NUM/$NUM_RUNS"
     echo "Request rate: $CURRENT_RATE req/s"
     echo "============================================="
     
@@ -46,7 +56,7 @@ for ((i=0; i<NUM_RUNS; i++)); do
         exit 1
     fi
     
-    echo "Benchmark run $((i+1)) completed successfully"
+    echo "Benchmark run $RUN_NUM completed successfully"
     echo ""
 done
 

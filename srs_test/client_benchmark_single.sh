@@ -10,7 +10,7 @@ python3 "$BENCHMARK_SCRIPT" \
     --model "$MODEL" \
     --dataset-name "$DATASET_NAME" \
     --dataset-path "$DATASET_PATH" \
-    --request-rate 2 \
+    --request-rate 3.6 \
     --num-prompts 200 \
     --output-len 32 \
     --ignore-eos \
