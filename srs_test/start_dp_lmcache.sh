@@ -9,5 +9,6 @@ export LMCACHE_USE_EXPERIMENTAL=True
 vllm serve \
     meta-llama/Llama-3.1-8B \
     --data-parallel-size 2 \
+    --no-enable-prefix-caching \
     --kv-transfer-config \
     '{"kv_connector":"LMCacheConnectorV1", "kv_role":"kv_both"}'
