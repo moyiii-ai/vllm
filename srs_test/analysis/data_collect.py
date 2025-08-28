@@ -79,7 +79,7 @@ def plot_latency_vs_throughput(df, latency_type, output_file_prefix):
 
 if __name__ == "__main__":
     # Configure target directory here
-    target_directory = "dp_lmcache_g5"
+    target_directory = "lmcache"
     
     vllm_metrics_df, dir_name = process_all_vllm_files(target_directory)
     

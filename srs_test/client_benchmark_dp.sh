@@ -1,47 +1,66 @@
 #!/bin/bash
 
+# Configuration parameters
 MODEL="meta-llama/Llama-3.1-8B"
 DATASET_NAME="longbench"
-DATASET_PATH="narrativeqa.jsonl"
+# Define dataset parts with their respective paths
+DATASET_PART1="narrativeqa_part1.jsonl"
+DATASET_PART2="narrativeqa_part2.jsonl"
 BENCHMARK_SCRIPT="../benchmarks/benchmark_serving_xingyu.py"
 
-TOTAL_REQUEST_RATE=3.6
-TOTAL_NUM_PROMPTS=200
-NUM_PROCS=2 
+TOTAL_REQUEST_RATE=4.4
+TOTAL_NUM_PROMPTS=400
+NUM_PROCS=2  # Number of parallel processes
 BASE_PORT=8000
 
+# Calculate request rate and prompts per process
 REQ_RATE=$(awk "BEGIN{printf \"%.2f\", $TOTAL_REQUEST_RATE / $NUM_PROCS}")
 PROMPTS=$((TOTAL_NUM_PROMPTS / NUM_PROCS))
 
+# Array to store process IDs
 PIDS=()
 
-for i in $(seq 0 $((NUM_PROCS-1))); do
-    PORT=$((BASE_PORT + i))
-    LOGFILE="benchmark_${PORT}.log"
-
-    echo "Launching benchmark on port $PORT..."
+# Function to start a benchmark process
+# Parameters:
+#   $1 - Dataset path
+#   $2 - Port number
+start_benchmark() {
+    local dataset_path=$1
+    local port=$2
+    local logfile="benchmark_${port}.log"
+    
+    echo "Launching benchmark on port $port for dataset: $dataset_path..."
     python3 "$BENCHMARK_SCRIPT" \
         --backend vllm \
         --model "$MODEL" \
         --dataset-name "$DATASET_NAME" \
-        --dataset-path "$DATASET_PATH" \
+        --dataset-path "$dataset_path" \
         --request-rate "$REQ_RATE" \
         --num-prompts "$PROMPTS" \
         --output-len 32 \
         --ignore-eos \
         --save-result \
-        --port "$PORT" \
-        > "$LOGFILE" 2>&1 &
-
+        --port "$port" \
+        > "$logfile" 2>&1 &
+    
+    # Store the process ID
     PIDS+=($!)
-done
+    echo "Benchmark process for $dataset_path started with PID ${PIDS[-1]}"
+}
 
+# Start benchmark for each dataset part on separate ports
+start_benchmark "$DATASET_PART1" $BASE_PORT
+start_benchmark "$DATASET_PART2" $((BASE_PORT + 1))
+
+echo "Waiting for all benchmark processes to finish..."
 for idx in "${!PIDS[@]}"; do
+    port=$((BASE_PORT + idx))
     wait "${PIDS[$idx]}"
     if [ $? -ne 0 ]; then
-        echo "Benchmark on port $((BASE_PORT + idx)) failed."
+        echo "Error: Benchmark process on port $port failed"
         exit 1
     fi
+    echo "Benchmark process on port $port completed successfully"
 done
 
-echo "All benchmark tests completed successfully."
+echo "All benchmark tests for both datasets completed successfully."
