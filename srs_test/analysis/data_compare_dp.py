@@ -3,10 +3,26 @@ import os
 import glob
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 from collections import defaultdict
 
+def calculate_percentile(data, percentile):
+    """Calculate percentile for a list of values"""
+    if not data:
+        return None
+    sorted_data = sorted(data)
+    n = len(sorted_data)
+    index = (n - 1) * (percentile / 100)
+    floor_index = int(np.floor(index))
+    fractional = index - floor_index
+    
+    if floor_index + 1 < n:
+        return sorted_data[floor_index] + fractional * (sorted_data[floor_index + 1] - sorted_data[floor_index])
+    else:
+        return sorted_data[floor_index]
+
 def extract_vllm_metrics(json_file):
-    """Extract vLLM metrics from a single JSON file"""
+    """Extract vLLM metrics from a single JSON file including ITLS data"""
     try:
         with open(json_file, 'r') as f:
             data = json.load(f)
@@ -16,7 +32,12 @@ def extract_vllm_metrics(json_file):
             'mean_ttft_ms': data.get('mean_ttft_ms'),
             'mean_tpot_ms': data.get('mean_tpot_ms'),
             'request_rate': data.get('request_rate'),
-            'request_throughput': data.get('request_throughput')
+            'request_throughput': data.get('request_throughput'),
+            # Extract p99_itl_ms directly if available
+            'p99_itl_ms': data.get('p99_itl_ms'),
+            # Store raw itls data for grouped processing
+            'itls': data.get('itls', []),
+            'raw_mean_itls': data.get('mean_itls')
         }
         
         # Validate request_rate for proper sorting
@@ -43,6 +64,10 @@ def process_standard_files(target_dir):
             all_metrics.append(file_metrics)
     
     metrics_df = pd.DataFrame(all_metrics)
+    # Remove raw itls data as we don't need it anymore for standard files
+    if 'itls' in metrics_df.columns:
+        metrics_df = metrics_df.drop('itls', axis=1)
+        
     metrics_df_sorted = metrics_df.sort_values(by='request_rate', ascending=True).reset_index(drop=True)
     # Add a column to identify the dataset
     metrics_df_sorted['dataset'] = target_dir
@@ -72,13 +97,26 @@ def process_grouped_files(target_dir):
     # Process each group of files
     for base_name, files in file_groups.items():
         group_data = []
+        all_itls_values = []  # To collect all itls values from group files
+        
         for file in files:
             file_metrics = extract_vllm_metrics(file)
             if file_metrics:
                 group_data.append(file_metrics)
+                
+                # Extract and flatten itls data
+                itls_data = file_metrics.get('itls', [])
+                for sublist in itls_data:
+                    if isinstance(sublist, list):
+                        all_itls_values.extend(sublist)
+                    else:
+                        all_itls_values.append(sublist)
         
         if not group_data:
             continue
+        
+        # Calculate 99th percentile for combined itls values
+        p99_itl_ms = calculate_percentile(all_itls_values, 99.99) * 1000 if all_itls_values else None
         
         # Calculate aggregated metrics for the group
         aggregated = {
@@ -87,6 +125,7 @@ def process_grouped_files(target_dir):
             'request_throughput': sum(item['request_throughput'] for item in group_data),
             'mean_ttft_ms': sum(item['mean_ttft_ms'] for item in group_data if item['mean_ttft_ms'] is not None) / len(group_data),
             'mean_tpot_ms': sum(item['mean_tpot_ms'] for item in group_data if item['mean_tpot_ms'] is not None) / len(group_data),
+            'p99_itl_ms': p99_itl_ms,  # Add calculated p99 from combined itls
             'dataset': target_dir  # Add dataset identifier
         }
         all_metrics.append(aggregated)
@@ -95,17 +134,20 @@ def process_grouped_files(target_dir):
     metrics_df_sorted = metrics_df.sort_values(by='request_rate', ascending=True).reset_index(drop=True)
     return metrics_df_sorted
 
-def plot_comparative_latency(df, latency_type, output_file):
+def plot_comparative_metrics(df, metric_type, output_file):
     """Generate comparative plot with lines for each dataset"""
     plt.figure(figsize=(12, 7))
     
-    # Configure plot based on latency type
-    if latency_type == 'mean_ttft_ms':
+    # Configure plot based on metric type
+    if metric_type == 'mean_ttft_ms':
         y_label = 'Mean TTFT (ms)'
         title = 'vLLM: Request Throughput vs Mean TTFT (Comparison)'
-    else:
+    elif metric_type == 'mean_tpot_ms':
         y_label = 'Mean TPOT (ms)'
         title = 'vLLM: Request Throughput vs Mean TPOT (Comparison)'
+    elif metric_type == 'p99_itl_ms':
+        y_label = 'P99 Inter-token Latency (ms)'
+        title = 'vLLM: Request Throughput vs P99 Inter-token Latency (Comparison)'
     
     # Define styles for each dataset
     datasets = {
@@ -120,7 +162,7 @@ def plot_comparative_latency(df, latency_type, output_file):
         if not dataset_df.empty:
             plt.plot(
                 dataset_df['request_throughput'],
-                dataset_df[latency_type],
+                dataset_df[metric_type],
                 color=style['color'],
                 marker=style['marker'],
                 label=style['label'],
@@ -139,7 +181,7 @@ def plot_comparative_latency(df, latency_type, output_file):
     print(f"Generated comparative plot: {output_file}")
 
 def generate_grouped_output(combined_df):
-    """Group by request rate and output ttft, tpot, and request throughput for the 3 directories"""
+    """Group by request rate and output metrics including p99_itl_ms for the 3 directories"""
     # Create output directory
     output_dir = "grouped_by_request_rate"
     os.makedirs(output_dir, exist_ok=True)
@@ -155,12 +197,14 @@ def generate_grouped_output(combined_df):
         for dataset in ['lmcache', 'dp_lmcache_g4', 'dp_lmcache_g5']:
             dataset_data = group[group['dataset'] == dataset]
             if not dataset_data.empty:
-                row[f'{dataset}_ttft'] = round(dataset_data.iloc[0]['mean_ttft_ms'], 2)
-                row[f'{dataset}_tpot'] = round(dataset_data.iloc[0]['mean_tpot_ms'], 2)
-                row[f'{dataset}_throughput'] = round(dataset_data.iloc[0]['request_throughput'], 2)
+                row[f'{dataset}_ttft'] = round(dataset_data.iloc[0]['mean_ttft_ms'], 2) if dataset_data.iloc[0]['mean_ttft_ms'] is not None else None
+                row[f'{dataset}_tpot'] = round(dataset_data.iloc[0]['mean_tpot_ms'], 2) if dataset_data.iloc[0]['mean_tpot_ms'] is not None else None
+                row[f'{dataset}_p99_itl'] = round(dataset_data.iloc[0]['p99_itl_ms'], 2) if dataset_data.iloc[0]['p99_itl_ms'] is not None else None
+                row[f'{dataset}_throughput'] = round(dataset_data.iloc[0]['request_throughput'], 2) if dataset_data.iloc[0]['request_throughput'] is not None else None
             else:
                 row[f'{dataset}_ttft'] = None
                 row[f'{dataset}_tpot'] = None
+                row[f'{dataset}_p99_itl'] = None
                 row[f'{dataset}_throughput'] = None
         
         result_data.append(row)
@@ -177,19 +221,31 @@ def generate_grouped_output(combined_df):
     # Display in requested format
     print("\n===== Performance Metrics Grouped by Request Rate =====")
     # Print header
-    print(f"{'Request Rate':<12} {'Dataset':<15} {'Throughput':<10} {'TTFT':<10} {'TPOT':<10}")
-    print("-" * 60)
+    print(f"{'Request Rate':<12} {'Dataset':<15} {'Throughput':<10} {'TTFT':<10} {'TPOT':<10} {'P99 ITL':<10}")
+    print("-" * 80)
     
     # Print each request rate group
     for _, row in result_df.iterrows():
         rate = row['request_rate']
         # Print lmcache data
-        print(f"{rate:<12} {'lmcache':<15} {row['lmcache_throughput'] if row['lmcache_throughput'] is not None else '-':<10} {row['lmcache_ttft'] if row['lmcache_ttft'] is not None else '-':<10} {row['lmcache_tpot'] if row['lmcache_tpot'] is not None else '-':<10}")
+        print(f"{rate:<12} {'lmcache':<15} "
+              f"{row['lmcache_throughput'] if row['lmcache_throughput'] is not None else '-':<10} "
+              f"{row['lmcache_ttft'] if row['lmcache_ttft'] is not None else '-':<10} "
+              f"{row['lmcache_tpot'] if row['lmcache_tpot'] is not None else '-':<10} "
+              f"{row['lmcache_p99_itl'] if row['lmcache_p99_itl'] is not None else '-':<10}")
         # Print dp_lmcache_g4 data
-        print(f"{'':<12} {'dp_lmcache_g4':<15} {row['dp_lmcache_g4_throughput'] if row['dp_lmcache_g4_throughput'] is not None else '-':<10} {row['dp_lmcache_g4_ttft'] if row['dp_lmcache_g4_ttft'] is not None else '-':<10} {row['dp_lmcache_g4_tpot'] if row['dp_lmcache_g4_tpot'] is not None else '-':<10}")
+        print(f"{'':<12} {'dp_lmcache_g4':<15} "
+              f"{row['dp_lmcache_g4_throughput'] if row['dp_lmcache_g4_throughput'] is not None else '-':<10} "
+              f"{row['dp_lmcache_g4_ttft'] if row['dp_lmcache_g4_ttft'] is not None else '-':<10} "
+              f"{row['dp_lmcache_g4_tpot'] if row['dp_lmcache_g4_tpot'] is not None else '-':<10} "
+              f"{row['dp_lmcache_g4_p99_itl'] if row['dp_lmcache_g4_p99_itl'] is not None else '-':<10}")
         # Print dp_lmcache_g5 data
-        print(f"{'':<12} {'dp_lmcache_g5':<15} {row['dp_lmcache_g5_throughput'] if row['dp_lmcache_g5_throughput'] is not None else '-':<10} {row['dp_lmcache_g5_ttft'] if row['dp_lmcache_g5_ttft'] is not None else '-':<10} {row['dp_lmcache_g5_tpot'] if row['dp_lmcache_g5_tpot'] is not None else '-':<10}")
-        print("-" * 60)
+        print(f"{'':<12} {'dp_lmcache_g5':<15} "
+              f"{row['dp_lmcache_g5_throughput'] if row['dp_lmcache_g5_throughput'] is not None else '-':<10} "
+              f"{row['dp_lmcache_g5_ttft'] if row['dp_lmcache_g5_ttft'] is not None else '-':<10} "
+              f"{row['dp_lmcache_g5_tpot'] if row['dp_lmcache_g5_tpot'] is not None else '-':<10} "
+              f"{row['dp_lmcache_g5_p99_itl'] if row['dp_lmcache_g5_p99_itl'] is not None else '-':<10}")
+        print("-" * 80)
     
     return result_df
 
@@ -224,14 +280,14 @@ def main():
     generate_grouped_output(combined_df)
     
     # Generate comparative plots
-    valid_df = combined_df.dropna(subset=['mean_ttft_ms', 'mean_tpot_ms', 'request_throughput'])
+    valid_df = combined_df.dropna(subset=['mean_ttft_ms', 'mean_tpot_ms', 'p99_itl_ms', 'request_throughput'])
     
     if not valid_df.empty:
-        plot_comparative_latency(valid_df, 'mean_ttft_ms', 'comparison_ttft.png')
-        plot_comparative_latency(valid_df, 'mean_tpot_ms', 'comparison_tpot.png')
+        plot_comparative_metrics(valid_df, 'mean_ttft_ms', 'comparison_ttft.png')
+        plot_comparative_metrics(valid_df, 'mean_tpot_ms', 'comparison_tpot.png')
+        plot_comparative_metrics(valid_df, 'p99_itl_ms', 'comparison_p99_itl.png')
     else:
         print("Warning: Insufficient valid data for generating comparative plots.")
 
 if __name__ == "__main__":
     main()
-    

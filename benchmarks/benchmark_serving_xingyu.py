@@ -796,6 +796,12 @@ async def benchmark(
         "input_lens": [output.prompt_len for output in outputs],
         "output_lens": actual_output_lens,
         "ttfts": [output.ttft for output in outputs],
+        "tpots": [
+            (output.latency - output.ttft) / (actual_output_lens[i] - 1) 
+            if (output.success and actual_output_lens[i] > 1) 
+            else 0.0 
+            for i, output in enumerate(outputs)
+        ],
         "itls": [output.itl for output in outputs],
         "generated_texts": [output.generated_text for output in outputs],
         "errors": [output.error for output in outputs],
