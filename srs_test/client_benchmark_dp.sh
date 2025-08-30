@@ -3,18 +3,22 @@
 # Configuration parameters
 MODEL="meta-llama/Llama-3.1-8B"
 DATASET_NAME="longbench"
-# Define dataset parts with their respective paths
-DATASET_PART1="narrativeqa_part1.jsonl"
-DATASET_PART2="narrativeqa_part2.jsonl"
+
+# DATASET_PART1="narrativeqa_part1.jsonl"
+# DATASET_PART2="narrativeqa_part2.jsonl"
+DATASET_PART1="narrativeqa.jsonl"
+DATASET_PART2="narrativeqa.jsonl"
+
 BENCHMARK_SCRIPT="../benchmarks/benchmark_serving_xingyu.py"
 
-TOTAL_REQUEST_RATE=4.4
-TOTAL_NUM_PROMPTS=400
+TOTAL_REQUEST_RATE=4
+TOTAL_NUM_PROMPTS=800
 NUM_PROCS=2  # Number of parallel processes
 BASE_PORT=8000
 
 # Calculate request rate and prompts per process
-REQ_RATE=$(awk "BEGIN{printf \"%.2f\", $TOTAL_REQUEST_RATE / $NUM_PROCS}")
+# REQ_RATE=$(awk "BEGIN{printf \"%.2f\", $TOTAL_REQUEST_RATE / $NUM_PROCS}")
+REQ_RATE=$TOTAL_REQUEST_RATE
 PROMPTS=$((TOTAL_NUM_PROMPTS / NUM_PROCS))
 
 # Array to store process IDs
@@ -64,3 +68,11 @@ for idx in "${!PIDS[@]}"; do
 done
 
 echo "All benchmark tests for both datasets completed successfully."
+
+echo -e "\n"
+echo -e "\033[1;32m=======================================================\033[0m"
+echo -e "\033[1;32m!!!                IMPORTANT NOTICE                   !!!\033[0m"
+echo -e "\033[1;32m!!!  All Benchmark tests have been completed successfully!  !!!\033[0m"
+echo -e "\033[1;32m!!!  Log files: benchmark_8000.log / benchmark_8001.log  !!!\033[0m"
+echo -e "\033[1;32m=======================================================\033[0m"
+echo -e "\n"

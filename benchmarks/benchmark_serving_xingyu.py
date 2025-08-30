@@ -799,7 +799,7 @@ async def benchmark(
         "tpots": [
             (output.latency - output.ttft) / (actual_output_lens[i] - 1) 
             if (output.success and actual_output_lens[i] > 1) 
-            else 0.0 
+            else None 
             for i, output in enumerate(outputs)
         ],
         "itls": [output.itl for output in outputs],

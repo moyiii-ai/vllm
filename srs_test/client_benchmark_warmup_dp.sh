@@ -3,8 +3,11 @@
 MODEL="meta-llama/Llama-3.1-8B"
 BENCHMARK_SCRIPT="../benchmarks/benchmark_serving_xingyu.py"
 
-DATASET_PART1="narrativeqa_part1.jsonl"
-DATASET_PART2="narrativeqa_part2.jsonl"
+# DATASET_PART1="narrativeqa_part1.jsonl"
+# DATASET_PART2="narrativeqa_part2.jsonl"
+
+DATASET_PART1="narrativeqa.jsonl"
+DATASET_PART2="narrativeqa.jsonl"
 
 PORT1=8000
 PORT2=8001
@@ -51,3 +54,10 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Both warmup benchmarks completed successfully."
+
+echo -e "\n"
+echo -e "\033[1;32m=======================================================\033[0m"  # Green bold separator line
+echo -e "\033[1;32m!!!                IMPORTANT NOTICE                   !!!\033[0m"
+echo -e "\033[1;32m!!!  All Benchmark tests have been completed successfully!  !!!\033[0m"
+echo -e "\033[1;32m=======================================================\033[0m"
+echo -e "\n"
