@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration parameters
-MODEL="meta-llama/Llama-3.1-8B"
+MODEL="meta-llama/Llama-3.1-8B-Instruct"
 DATASET_NAME="longbench"
 
 # DATASET_PART1="narrativeqa_part1.jsonl"
@@ -11,7 +11,7 @@ DATASET_PART2="narrativeqa.jsonl"
 
 BENCHMARK_SCRIPT="../benchmarks/benchmark_serving_xingyu.py"
 
-TOTAL_REQUEST_RATE=4
+TOTAL_REQUEST_RATE=0.4
 TOTAL_NUM_PROMPTS=800
 NUM_PROCS=2  # Number of parallel processes
 BASE_PORT=8000

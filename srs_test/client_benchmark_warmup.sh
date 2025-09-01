@@ -1,4 +1,4 @@
-MODEL="meta-llama/Llama-3.1-8B"
+MODEL="meta-llama/Llama-3.1-8B-Instruct"
 DATASET_NAME="longbench"
 DATASET_PATH="narrativeqa.jsonl"
 BENCHMARK_SCRIPT="../benchmarks/benchmark_serving_xingyu.py"

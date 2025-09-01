@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MODEL_NAME="meta-llama/Llama-3.1-8B"
+MODEL_NAME="meta-llama/Llama-3.1-8B-Instruct"
 SERVER_URL="http://127.0.0.1:8000"  
 ENDPOINT="/v1/completions"          
 BENCHMARK_LOG="benchmark.log"       

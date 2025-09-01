@@ -10,7 +10,7 @@ python3 "$BENCHMARK_SCRIPT" \
     --model "$MODEL" \
     --dataset-name "$DATASET_NAME" \
     --dataset-path "$DATASET_PATH" \
-    --request-rate 3.2 \
+    --request-rate 4.0 \
     --num-prompts 800 \
     --output-len 32 \
     --ignore-eos \
@@ -23,3 +23,10 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Benchmark tests completed successfully."
+
+echo -e "\n"
+echo -e "\033[1;32m=======================================================\033[0m"
+echo -e "\033[1;32m!!!                IMPORTANT NOTICE                   !!!\033[0m"
+echo -e "\033[1;32m!!!  All Benchmark tests have been completed successfully!  !!!\033[0m"
+echo -e "\033[1;32m=======================================================\033[0m"
+echo -e "\n"

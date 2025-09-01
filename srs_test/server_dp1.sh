@@ -12,7 +12,7 @@ export LMCACHE_USE_EXPERIMENTAL=True
 export LMCACHE_USE_LAYERWISE=True
 
 CUDA_VISIBLE_DEVICES=1 \
-vllm serve meta-llama/Llama-3.1-8B \
+vllm serve meta-llama/Llama-3.1-8B-Instruct \
     --no-enable-prefix-caching \
     --port 8001 --kv-transfer-config \
     '{"kv_connector":"LMCacheConnectorV1", "kv_role":"kv_both"}'

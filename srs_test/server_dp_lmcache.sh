@@ -6,7 +6,7 @@ export LMCACHE_MAX_LOCAL_CPU_SIZE=100.0
 export LMCACHE_USE_EXPERIMENTAL=True
 
 vllm serve \
-    meta-llama/Llama-3.1-8B \
+    meta-llama/Llama-3.1-8B-Instruct \
     --data-parallel-size 2 \
     --no-enable-prefix-caching \
     --kv-transfer-config \

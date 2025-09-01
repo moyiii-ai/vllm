@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MODEL_NAME="meta-llama/Llama-3.1-8B"
+MODEL_NAME="meta-llama/Llama-3.1-8B-Instruct"
 HOST="0.0.0.0"
 PORT=8000
 

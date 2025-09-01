@@ -9,7 +9,7 @@ export LMCACHE_USE_EXPERIMENTAL=True
 export LMCACHE_USE_LAYERWISE=True
 
 vllm serve \
-    meta-llama/Llama-3.1-8B \
+    meta-llama/Llama-3.1-8B-Instruct \
     --no-enable-prefix-caching \
     --kv-transfer-config \
     '{"kv_connector":"LMCacheConnectorV1", "kv_role":"kv_both"}'

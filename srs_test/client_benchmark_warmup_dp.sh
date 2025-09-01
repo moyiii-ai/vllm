@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MODEL="meta-llama/Llama-3.1-8B"
+MODEL="meta-llama/Llama-3.1-8B-Instruct"
 BENCHMARK_SCRIPT="../benchmarks/benchmark_serving_xingyu.py"
 
 # DATASET_PART1="narrativeqa_part1.jsonl"
