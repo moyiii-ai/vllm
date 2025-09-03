@@ -303,7 +303,57 @@ void runWithWarmup(const char* title,
     passFn(d0, d1, sizes, /*print=*/true);
 }
 
-int main() {
+// 根据测试类型执行对应测试
+void runTestsByType(const std::string& testType, 
+                    const DeviceContext& d0, const DeviceContext& d1,
+                    const std::vector<size_t>& sizes_baseline,
+                    const std::vector<size_t>& sizes_allreduce_decode,
+                    const std::vector<size_t>& sizes_allreduce_prefill)
+{
+    if (testType == "write") {
+        runWithWarmup("=== Bidirectional Write (various sizes) ===", runPassBiWrite, d0, d1, sizes_baseline);
+        printf("\n\n");
+        runWithWarmup("=== Bidirectional Write (All-Reduce decode sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_decode);
+        printf("\n\n");
+        runWithWarmup("=== Bidirectional Write (All-Reduce prefill sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_prefill);
+    }
+    else if (testType == "read") {
+        runWithWarmup("=== Bidirectional Read  (various sizes) ===", runPassBiRead , d0, d1, sizes_baseline);
+        printf("\n\n");
+        runWithWarmup("=== Bidirectional Read  (All-Reduce decode sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_decode);
+        printf("\n\n");
+        runWithWarmup("=== Bidirectional Read  (All-Reduce prefill sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_prefill);
+    }
+    else {
+        // 1) Baseline: Bidirectional WRITE, then READ
+        runWithWarmup("=== Bidirectional Write (various sizes) ===", runPassBiWrite, d0, d1, sizes_baseline);
+        runWithWarmup("=== Bidirectional Read  (various sizes) ===", runPassBiRead , d0, d1, sizes_baseline);
+        printf("\n\n");
+        
+        // 2) All-Reduce-like: decode sizes
+        runWithWarmup("=== Bidirectional Write (All-Reduce decode sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_decode);
+        runWithWarmup("=== Bidirectional Read  (All-Reduce decode sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_decode);
+        printf("\n\n");
+        
+        // 3) All-Reduce-like: prefill sizes
+        runWithWarmup("=== Bidirectional Write (All-Reduce prefill sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_prefill);
+        runWithWarmup("=== Bidirectional Read  (All-Reduce prefill sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_prefill);
+    }
+}
+
+int main(int argc, char* argv[]) {
+    std::string testType;
+    if (argc == 2) {
+        testType = argv[1];
+        if (testType != "write" && testType != "read") {
+            std::cerr << "Invalid argument. Use: " << argv[0] << " [write|read]\n";
+            return EXIT_FAILURE;
+        }
+    } else if (argc > 2) {
+        std::cerr << "Too many arguments. Use: " << argv[0] << " [write|read]\n";
+        return EXIT_FAILURE;
+    }
+
     // Require at least two devices
     int deviceCount = 0;
     CHECK(cudaGetDeviceCount(&deviceCount));
@@ -334,10 +384,7 @@ int main() {
         size_t(256)<< 20
     };
 
-    // All-Reduce-like sizes (bytes):
-    // - decode (per token per rank) tends to be small (tens of KB); choose 64KB, 256KB
-    // - prefill (sequence/batch aggregated) can be multi-MB; choose 8MB, 16MB
-    // You can adjust these to your exact TP topology and dtype.
+    // All-Reduce-like sizes (bytes)
     std::vector<size_t> sizes_allreduce_decode = {
         size_t(8) << 10,   // 8 KB
         size_t(64)  << 10,  // 64 KB
@@ -358,17 +405,7 @@ int main() {
     initDevice(d0, maxBytes);
     initDevice(d1, maxBytes);
 
-    // 1) Baseline: Bidirectional WRITE, then READ (each has a whole-pass warm-up)
-    runWithWarmup("=== Bidirectional Write (various sizes) ===", runPassBiWrite, d0, d1, sizes_baseline);
-    runWithWarmup("=== Bidirectional Read  (various sizes) ===", runPassBiRead , d0, d1, sizes_baseline);
-    printf("\n\n");
-    // 2) All-Reduce-like: decode sizes
-    runWithWarmup("=== Bidirectional Write (All-Reduce decode sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_decode);
-    runWithWarmup("=== Bidirectional Read  (All-Reduce decode sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_decode);
-    printf("\n\n");
-    // 3) All-Reduce-like: prefill sizes
-    runWithWarmup("=== Bidirectional Write (All-Reduce prefill sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_prefill);
-    runWithWarmup("=== Bidirectional Read  (All-Reduce prefill sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_prefill);
+    runTestsByType(testType, d0, d1, sizes_baseline, sizes_allreduce_decode, sizes_allreduce_prefill);
 
     cleanupDevice(d0);
     cleanupDevice(d1);

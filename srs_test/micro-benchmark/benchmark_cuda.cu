@@ -105,6 +105,41 @@ void runWithWarmup(const char* title,
     passFn(d0, d1, sizes, true);
 }
 
+// Run tests based on type
+void runTestsByType(const std::string& testType,
+                   const DeviceContext& d0, const DeviceContext& d1,
+                   const std::vector<size_t>& various_sizes,
+                   const std::vector<size_t>& decode_sizes,
+                   const std::vector<size_t>& prefill_sizes) {
+    if (testType == "write") {
+        // Only run write tests
+        runWithWarmup("=== Bidirectional Write (various sizes) ===", runBiWrite, d0, d1, various_sizes);
+        std::cout << "\n\n";
+        runWithWarmup("=== Bidirectional Write (All-Reduce decode sizes) ===", runBiWrite, d0, d1, decode_sizes);
+        std::cout << "\n\n";
+        runWithWarmup("=== Bidirectional Write (All-Reduce prefill sizes) ===", runBiWrite, d0, d1, prefill_sizes);
+    } else if (testType == "read") {
+        // Only run read tests
+        runWithWarmup("=== Bidirectional Read  (various sizes) ===", runBiRead,  d0, d1, various_sizes);
+        std::cout << "\n\n";
+        runWithWarmup("=== Bidirectional Read  (All-Reduce decode sizes) ===", runBiRead,  d0, d1, decode_sizes);
+        std::cout << "\n\n";
+        runWithWarmup("=== Bidirectional Read  (All-Reduce prefill sizes) ===", runBiRead,  d0, d1, prefill_sizes);
+    } else {
+        // Run all tests (default behavior)
+        runWithWarmup("=== Bidirectional Write (various sizes) ===", runBiWrite, d0, d1, various_sizes);
+        runWithWarmup("=== Bidirectional Read  (various sizes) ===", runBiRead,  d0, d1, various_sizes);
+        std::cout << "\n\n";
+
+        runWithWarmup("=== Bidirectional Write (All-Reduce decode sizes) ===", runBiWrite, d0, d1, decode_sizes);
+        runWithWarmup("=== Bidirectional Read  (All-Reduce decode sizes) ===", runBiRead,  d0, d1, decode_sizes);
+        std::cout << "\n\n";
+
+        runWithWarmup("=== Bidirectional Write (All-Reduce prefill sizes) ===", runBiWrite, d0, d1, prefill_sizes);
+        runWithWarmup("=== Bidirectional Read  (All-Reduce prefill sizes) ===", runBiRead,  d0, d1, prefill_sizes);
+    }
+}
+
 void initDevice(DeviceContext& ctx, size_t cap) {
     CHECK(cudaSetDevice(ctx.devId));
     CHECK(cudaMalloc(&ctx.buf_send, cap));
@@ -113,8 +148,21 @@ void initDevice(DeviceContext& ctx, size_t cap) {
     CHECK(cudaMemset(ctx.buf_recv, 0, cap));
 }
 
-int main() {
-    // message sizes
+int main(int argc, char* argv[]) {
+    // Parse command line arguments
+    std::string testType;
+    if (argc == 2) {
+        testType = argv[1];
+        if (testType != "write" && testType != "read") {
+            std::cerr << "Invalid argument. Use: " << argv[0] << " [write|read]\n";
+            return EXIT_FAILURE;
+        }
+    } else if (argc > 2) {
+        std::cerr << "Too many arguments. Use: " << argv[0] << " [write|read]\n";
+        return EXIT_FAILURE;
+    }
+
+    // Message sizes
     std::vector<size_t> various_sizes = { size_t(1)<<20, size_t(8)<<20, size_t(64)<<20, size_t(256)<<20 };
     std::vector<size_t> decode_sizes  = { size_t(8)<<10, size_t(64)<<10 };   // 8KB, 64KB
     std::vector<size_t> prefill_sizes = { size_t(8)<<20, size_t(16)<<20 };   // 8MB, 16MB
@@ -134,21 +182,14 @@ int main() {
     CHECK(cudaSetDevice(1));
     CHECK(cudaDeviceEnablePeerAccess(0, 0));
 
-    // Run three groups with warmup
-    runWithWarmup("=== Bidirectional Write (various sizes) ===", runBiWrite, d0, d1, various_sizes);
-    runWithWarmup("=== Bidirectional Read  (various sizes) ===", runBiRead,  d0, d1, various_sizes);
-    std::cout << "\n\n";
+    // Run tests based on type
+    runTestsByType(testType, d0, d1, various_sizes, decode_sizes, prefill_sizes);
 
-    runWithWarmup("=== Bidirectional Write (All-Reduce decode sizes) ===", runBiWrite, d0, d1, decode_sizes);
-    runWithWarmup("=== Bidirectional Read  (All-Reduce decode sizes) ===", runBiRead,  d0, d1, decode_sizes);
-    std::cout << "\n\n";
-
-    runWithWarmup("=== Bidirectional Write (All-Reduce prefill sizes) ===", runBiWrite, d0, d1, prefill_sizes);
-    runWithWarmup("=== Bidirectional Read  (All-Reduce prefill sizes) ===", runBiRead,  d0, d1, prefill_sizes);
-
+    // Cleanup
     CHECK(cudaFree(d0.buf_send));
     CHECK(cudaFree(d0.buf_recv));
     CHECK(cudaFree(d1.buf_send));
     CHECK(cudaFree(d1.buf_recv));
     return 0;
 }
+    

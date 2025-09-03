@@ -20,4 +20,14 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Running benchmark..."
-./$BIN_FILE
+if [ $# -eq 1 ]; then
+    if [ "$1" = "read" ] || [ "$1" = "write" ]; then
+        ./$BIN_FILE "$1"
+    else
+        echo "Invalid argument. Use: $0 [read|write]"
+        exit 1
+    fi
+else
+    ./$BIN_FILE
+fi
+    
