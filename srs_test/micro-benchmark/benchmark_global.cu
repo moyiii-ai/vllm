@@ -249,7 +249,7 @@ int chooseRepeat(size_t bytes) {
 
 // Run a whole pass (all sizes) for bidirectional READ; if print=false, treat as warm-up.
 void runPassBiRead(const DeviceContext& d0, const DeviceContext& d1,
-                   const std::vector<size_t>& sizes, bool print)
+                   const std::vector<size_t>& sizes, bool print, bool isBidirectional)
 {
     const int blocks = 256, threads = 256;
     for (auto bytes : sizes) {
@@ -259,20 +259,24 @@ void runPassBiRead(const DeviceContext& d0, const DeviceContext& d1,
         const int repeat = chooseRepeat(bytes16);
         double bw0 = 0.0, bw1 = 0.0;
         std::thread t0([&]{ bw0 = runOneRead(d0.devId, d0.buf_recv, d1.buf_send, bytes16, repeat, blocks, threads); });
-        std::thread t1([&]{ bw1 = runOneRead(d1.devId, d1.buf_recv, d0.buf_send, bytes16, repeat, blocks, threads); });
-        t0.join(); t1.join();
+        if (isBidirectional) {
+            std::thread t1([&]{ bw1 = runOneRead(d1.devId, d1.buf_recv, d0.buf_send, bytes16, repeat, blocks, threads); });
+            t1.join();
+        }
+        t0.join(); 
         if (print) {
             std::cout << "Read: dev0<-dev1 | Size = " << (bytes16 / 1024.0 / 1024.0)
                       << " MB | Bandwidth = " << bw0 << " GB/s\n";
-            std::cout << "Read: dev1<-dev0 | Size = " << (bytes16 / 1024.0 / 1024.0)
-                      << " MB | Bandwidth = " << bw1 << " GB/s\n";
+            if (isBidirectional)
+                std::cout << "Read: dev1<-dev0 | Size = " << (bytes16 / 1024.0 / 1024.0)
+                          << " MB | Bandwidth = " << bw1 << " GB/s\n";
         }
     }
 }
 
 // Run a whole pass (all sizes) for bidirectional WRITE; if print=false, treat as warm-up.
 void runPassBiWrite(const DeviceContext& d0, const DeviceContext& d1,
-                    const std::vector<size_t>& sizes, bool print)
+                    const std::vector<size_t>& sizes, bool print, bool isBidirectional)
 {
     const int blocks = 256, threads = 256;
     for (auto bytes : sizes) {
@@ -281,63 +285,67 @@ void runPassBiWrite(const DeviceContext& d0, const DeviceContext& d1,
         const int repeat = chooseRepeat(bytes16);
         double bw01 = 0.0, bw10 = 0.0;
         std::thread t0([&]{ bw01 = runOneWrite(d0.devId, d1.buf_recv, d0.buf_send, bytes16, repeat, blocks, threads); });
-        std::thread t1([&]{ bw10 = runOneWrite(d1.devId, d0.buf_recv, d1.buf_send, bytes16, repeat, blocks, threads); });
-        t0.join(); t1.join();
+        if (isBidirectional) {
+            std::thread t1([&]{ bw10 = runOneWrite(d1.devId, d0.buf_recv, d1.buf_send, bytes16, repeat, blocks, threads); });
+            t1.join();
+        }
+        t0.join();
         if (print) {
             std::cout << "Write: dev0->dev1 | Size = " << (bytes16 / 1024.0 / 1024.0)
                       << " MB | Bandwidth = " << bw01 << " GB/s\n";
-            std::cout << "Write: dev1->dev0 | Size = " << (bytes16 / 1024.0 / 1024.0)
-                      << " MB | Bandwidth = " << bw10 << " GB/s\n";
+            if (isBidirectional)
+                std::cout << "Write: dev1->dev0 | Size = " << (bytes16 / 1024.0 / 1024.0)
+                          << " MB | Bandwidth = " << bw10 << " GB/s\n";
         }
     }
 }
 
 // Convenience to run: warm-up pass then measured pass
 void runWithWarmup(const char* title,
-                   void (*passFn)(const DeviceContext&, const DeviceContext&, const std::vector<size_t>&, bool),
+                   void (*passFn)(const DeviceContext&, const DeviceContext&, const std::vector<size_t>&, bool, bool),
                    const DeviceContext& d0, const DeviceContext& d1,
-                   const std::vector<size_t>& sizes)
+                   const std::vector<size_t>& sizes, bool isBidirectional)
 {
-    passFn(d0, d1, sizes, /*print=*/false);
+    passFn(d0, d1, sizes, /*print=*/false, isBidirectional);
     std::cout << title << "\n";
-    passFn(d0, d1, sizes, /*print=*/true);
+    passFn(d0, d1, sizes, /*print=*/true, isBidirectional);
 }
 
-// 根据测试类型执行对应测试
 void runTestsByType(const std::string& testType, 
                     const DeviceContext& d0, const DeviceContext& d1,
                     const std::vector<size_t>& sizes_baseline,
                     const std::vector<size_t>& sizes_allreduce_decode,
-                    const std::vector<size_t>& sizes_allreduce_prefill)
+                    const std::vector<size_t>& sizes_allreduce_prefill,
+                    bool isBidirectional = true)
 {
     if (testType == "write") {
-        runWithWarmup("=== Bidirectional Write (various sizes) ===", runPassBiWrite, d0, d1, sizes_baseline);
+        runWithWarmup("=== Bidirectional Write (various sizes) ===", runPassBiWrite, d0, d1, sizes_baseline, isBidirectional);
         printf("\n\n");
-        runWithWarmup("=== Bidirectional Write (All-Reduce decode sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_decode);
+        runWithWarmup("=== Bidirectional Write (All-Reduce decode sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_decode, isBidirectional);
         printf("\n\n");
-        runWithWarmup("=== Bidirectional Write (All-Reduce prefill sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_prefill);
+        runWithWarmup("=== Bidirectional Write (All-Reduce prefill sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_prefill, isBidirectional);
     }
     else if (testType == "read") {
-        runWithWarmup("=== Bidirectional Read  (various sizes) ===", runPassBiRead , d0, d1, sizes_baseline);
+        runWithWarmup("=== Bidirectional Read  (various sizes) ===", runPassBiRead , d0, d1, sizes_baseline, isBidirectional);
         printf("\n\n");
-        runWithWarmup("=== Bidirectional Read  (All-Reduce decode sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_decode);
+        runWithWarmup("=== Bidirectional Read  (All-Reduce decode sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_decode, isBidirectional);
         printf("\n\n");
-        runWithWarmup("=== Bidirectional Read  (All-Reduce prefill sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_prefill);
+        runWithWarmup("=== Bidirectional Read  (All-Reduce prefill sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_prefill, isBidirectional);
     }
     else {
         // 1) Baseline: Bidirectional WRITE, then READ
-        runWithWarmup("=== Bidirectional Write (various sizes) ===", runPassBiWrite, d0, d1, sizes_baseline);
-        runWithWarmup("=== Bidirectional Read  (various sizes) ===", runPassBiRead , d0, d1, sizes_baseline);
+        runWithWarmup("=== Bidirectional Write (various sizes) ===", runPassBiWrite, d0, d1, sizes_baseline, isBidirectional);
+        runWithWarmup("=== Bidirectional Read  (various sizes) ===", runPassBiRead , d0, d1, sizes_baseline, isBidirectional);
         printf("\n\n");
         
         // 2) All-Reduce-like: decode sizes
-        runWithWarmup("=== Bidirectional Write (All-Reduce decode sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_decode);
-        runWithWarmup("=== Bidirectional Read  (All-Reduce decode sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_decode);
+        runWithWarmup("=== Bidirectional Write (All-Reduce decode sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_decode, isBidirectional);
+        runWithWarmup("=== Bidirectional Read  (All-Reduce decode sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_decode, isBidirectional);
         printf("\n\n");
         
         // 3) All-Reduce-like: prefill sizes
-        runWithWarmup("=== Bidirectional Write (All-Reduce prefill sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_prefill);
-        runWithWarmup("=== Bidirectional Read  (All-Reduce prefill sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_prefill);
+        runWithWarmup("=== Bidirectional Write (All-Reduce prefill sizes) ===", runPassBiWrite, d0, d1, sizes_allreduce_prefill, isBidirectional);
+        runWithWarmup("=== Bidirectional Read  (All-Reduce prefill sizes) ===", runPassBiRead , d0, d1, sizes_allreduce_prefill, isBidirectional);
     }
 }
 
@@ -405,7 +413,13 @@ int main(int argc, char* argv[]) {
     initDevice(d0, maxBytes);
     initDevice(d1, maxBytes);
 
-    runTestsByType(testType, d0, d1, sizes_baseline, sizes_allreduce_decode, sizes_allreduce_prefill);
+    printf("Initialization done! Start counter polling and press...\n");
+    getchar();
+    
+    runTestsByType(testType, d0, d1, sizes_baseline, sizes_allreduce_decode, sizes_allreduce_prefill, false);
+    
+    printf("All tests done! Stop counter polling and press...\n");
+    getchar();
 
     cleanupDevice(d0);
     cleanupDevice(d1);
