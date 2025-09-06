@@ -10,10 +10,10 @@ fi
 
 MODE=$1
 
-if [ "$MODE" == "read" ]; then
+if [ "$MODE" == "read_global" ]; then
     NCU_REP_FILE="read_kernel_metrics.ncu-rep"
     OUTPUT_FILE="ncu_read.result"
-elif [ "$MODE" == "write" ]; then
+elif [ "$MODE" == "write_global" ]; then
     NCU_REP_FILE="write_kernel_metrics.ncu-rep"
     OUTPUT_FILE="ncu_write.result"
 elif [ "$MODE" == "read_copy" ]; then

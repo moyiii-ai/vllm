@@ -211,8 +211,11 @@ csrc/moe/marlin_moe_wna16/kernel_*
 # Ignore ep_kernels_workspace folder
 ep_kernels_workspace/
 
-# Ignore benchmark outputs
+# Ignore benchmark-generated binaries, reports, and logs
+srs_test/micro-benchmark/*
+!srs_test/micro-benchmark/*.*
 srs_test/**/*.json
+srs_test/**/*.log
 srs_test/**/*.png
 srs_test/**/*.deb
 srs_test/**/*.nsys-rep
