@@ -217,3 +217,5 @@ srs_test/**/*.png
 srs_test/**/*.deb
 srs_test/**/*.nsys-rep
 srs_test/**/*.sqlite
+srs_test/**/*.ncu-rep
+srs_test/**/*.result
