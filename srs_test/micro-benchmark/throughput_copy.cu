@@ -69,12 +69,13 @@ int main(int argc, char* argv[]) {
 
     for (int i = 0; i < REPEAT; i++) {
         if (mode == 1) {
-            // Single device: use CUDA events for accurate GPU timing
-            cudaEvent_t start, stop;
             checkCuda(cudaSetDevice(0));
-            checkCuda(cudaEventCreate(&start));
-            checkCuda(cudaEventCreate(&stop));
-            checkCuda(cudaEventRecord(start));
+            auto t_start = std::chrono::high_resolution_clock::now();
+
+            // cudaEvent_t start, stop;
+            // checkCuda(cudaEventCreate(&start));
+            // checkCuda(cudaEventCreate(&stop));
+            // checkCuda(cudaEventRecord(start));
 
             if (op == "read") {
                 // GPU0 reads from GPU1
@@ -84,14 +85,18 @@ int main(int argc, char* argv[]) {
                 copyKernel<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, numElements);
             }
 
-            checkCuda(cudaEventRecord(stop));
-            checkCuda(cudaEventSynchronize(stop));
-            float ms = 0.0f;
-            checkCuda(cudaEventElapsedTime(&ms, start, stop));
-            total_time_sec += ms / 1000.0;
+            checkCuda(cudaDeviceSynchronize());
+            auto t_end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> diff = t_end - t_start;
+            total_time_sec += diff.count();
 
-            cudaEventDestroy(start);
-            cudaEventDestroy(stop);
+            // checkCuda(cudaEventRecord(stop));
+            // checkCuda(cudaEventSynchronize(stop));
+            // float ms = 0.0f;
+            // checkCuda(cudaEventElapsedTime(&ms, start, stop));
+            // total_time_sec += ms / 1000.0;
+            // cudaEventDestroy(start);
+            // cudaEventDestroy(stop);
         } else {
             // Two-way: use host clock for cross-GPU measurement
             auto t_start = std::chrono::high_resolution_clock::now();
