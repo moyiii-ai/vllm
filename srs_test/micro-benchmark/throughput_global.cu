@@ -133,9 +133,15 @@ int main(int argc, char* argv[]) {
 
     double total_time_sec = 0.0;
 
+    // for (int i = 0; i < REPEAT; i++) {
+    //     checkCuda(cudaSetDevice(0));
+    //     peerReadKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum0);
+    //     cudaDeviceSynchronize();
+    // }
+
     for (int i = 0; i < REPEAT; i++) {
         if (mode == 1) {            
-            checkCuda(cudaSetDevice(0));
+            checkCuda(cudaSetDevice(1));
             auto t_start = std::chrono::high_resolution_clock::now();
 
             // cudaEvent_t start, stop;
@@ -144,9 +150,9 @@ int main(int argc, char* argv[]) {
             // checkCuda(cudaEventRecord(start));
 
             if (op == "read")
-                peerReadKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum0);
+                peerReadKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, n_vec4, d_checksum1);
             else
-                peerWriteKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, n_vec4, d_checksum1);
+                peerWriteKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum0);
 
             checkCuda(cudaDeviceSynchronize());
             auto t_end = std::chrono::high_resolution_clock::now();
@@ -161,7 +167,7 @@ int main(int argc, char* argv[]) {
             // cudaEventDestroy(start);
             // cudaEventDestroy(stop);
         } else {
-            auto t_start = std::chrono::high_resolution_clock::now();
+            // auto t_start = std::chrono::high_resolution_clock::now();
 
             // Launch kernels
             checkCuda(cudaSetDevice(0));
@@ -171,13 +177,14 @@ int main(int argc, char* argv[]) {
                 peerWriteKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, n_vec4, d_checksum1);
 
             checkCuda(cudaSetDevice(1));
+            auto t_start = std::chrono::high_resolution_clock::now();
             if (op == "read")
                 peerReadKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, n_vec4, d_checksum1);
             else
                 peerWriteKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum0);
 
             // Synchronize both devices
-            checkCuda(cudaSetDevice(0)); cudaDeviceSynchronize();
+            // checkCuda(cudaSetDevice(0)); cudaDeviceSynchronize();
             checkCuda(cudaSetDevice(1)); cudaDeviceSynchronize();
 
             auto t_end = std::chrono::high_resolution_clock::now();

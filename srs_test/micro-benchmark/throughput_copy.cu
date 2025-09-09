@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 
     for (int i = 0; i < REPEAT; i++) {
         if (mode == 1) {
-            checkCuda(cudaSetDevice(0));
+            checkCuda(cudaSetDevice(1));
             auto t_start = std::chrono::high_resolution_clock::now();
 
             // cudaEvent_t start, stop;
@@ -79,10 +79,10 @@ int main(int argc, char* argv[]) {
 
             if (op == "read") {
                 // GPU0 reads from GPU1
-                copyKernel<<<gridSize, BLOCK_SIZE>>>(d_dst0, d_src1, numElements);
+                copyKernel<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, numElements);
             } else {
                 // GPU0 writes to GPU1
-                copyKernel<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, numElements);
+                copyKernel<<<gridSize, BLOCK_SIZE>>>(d_dst0, d_src1, numElements);
             }
 
             checkCuda(cudaDeviceSynchronize());
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
             // cudaEventDestroy(stop);
         } else {
             // Two-way: use host clock for cross-GPU measurement
-            auto t_start = std::chrono::high_resolution_clock::now();
+            // auto t_start = std::chrono::high_resolution_clock::now();
 
             // Launch kernels on GPU0 and GPU1
             checkCuda(cudaSetDevice(0));
@@ -109,13 +109,14 @@ int main(int argc, char* argv[]) {
                 copyKernel<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, numElements);
 
             checkCuda(cudaSetDevice(1));
+            auto t_start = std::chrono::high_resolution_clock::now();
             if (op == "read")
                 copyKernel<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, numElements);
             else
                 copyKernel<<<gridSize, BLOCK_SIZE>>>(d_dst0, d_src1, numElements); // cross GPU write
 
             // Synchronize both devices
-            checkCuda(cudaSetDevice(0)); cudaDeviceSynchronize();
+            // checkCuda(cudaSetDevice(0)); cudaDeviceSynchronize();
             checkCuda(cudaSetDevice(1)); cudaDeviceSynchronize();
 
             auto t_end = std::chrono::high_resolution_clock::now();
