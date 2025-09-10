@@ -1,0 +1,25 @@
+{
+    "train_batch_size": 16,
+    "gradient_accumulation_steps": 1,
+    "optimizer": {
+        "type": "Adam",
+        "params": {
+            "lr": 0.001
+        }
+    },
+    "moe": {
+        "enabled": true,
+        "num_experts": 2,
+        "expert_model_parallel_size": 2,
+        "top_k": 1,
+        "min_capacity": 4,
+        "capacity_factor": 1.0
+    },
+    "gradient_clipping": 1.0,
+    "fp16": {
+        "enabled": false
+    },
+    "bf16": {
+        "enabled": false
+    }
+}
