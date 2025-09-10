@@ -1,6 +1,6 @@
 #include <cuda_runtime.h>
 #include <iostream>
-#include <chrono>
+#include <iomanip>
 #include <string>
 #include <cstdint>
 
@@ -8,7 +8,7 @@
 #define BLOCK_SIZE 256
 #define REPEAT 50
 
-// Custom P2P write kernel using volatile ld/st
+// P2P write kernel using volatile ld/st
 __global__ void peerWriteKernelV4(
     uint32_t* __restrict__ dst_peer_u32,
     const uint32_t* __restrict__ src_local_u32,
@@ -17,35 +17,29 @@ __global__ void peerWriteKernelV4(
 {
     const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
     const size_t stride = gridDim.x * blockDim.x;
-
     unsigned long long acc = 0ull;
 
     for (size_t i = tid; i < n_vec4; i += stride) {
         const uint32_t* src_ptr = src_local_u32 + (i << 2);
         uint32_t* dst_ptr       = dst_peer_u32  + (i << 2);
-
         uint32_t x0, x1, x2, x3;
-        asm volatile(
-            "ld.volatile.global.v4.u32 {%0,%1,%2,%3}, [%4];\n"
-            : "=r"(x0), "=r"(x1), "=r"(x2), "=r"(x3)
-            : "l"(src_ptr)
-            : "memory");
 
-        asm volatile(
-            "st.volatile.global.v4.u32 [%0], {%1,%2,%3,%4};\n"
-            :
-            : "l"(dst_ptr), "r"(x0), "r"(x1), "r"(x2), "r"(x3)
-            : "memory");
-
+        asm volatile("ld.volatile.global.v4.u32 {%0,%1,%2,%3}, [%4];"
+                     : "=r"(x0), "=r"(x1), "=r"(x2), "=r"(x3)
+                     : "l"(src_ptr) : "memory");
+        asm volatile("st.volatile.global.v4.u32 [%0], {%1,%2,%3,%4};"
+                     :
+                     : "l"(dst_ptr), "r"(x0), "r"(x1), "r"(x2), "r"(x3)
+                     : "memory");
         acc += (unsigned long long)x0 + x1 + x2 + x3;
     }
+
     __syncthreads();
     __threadfence_system();
-
     if (tid == 0) atomicAdd(checksum, acc);
 }
 
-// Custom P2P read kernel using volatile ld/st
+// P2P read kernel using volatile ld/st
 __global__ void peerReadKernelV4(
     uint32_t* __restrict__ dst_local_u32,
     const uint32_t* __restrict__ src_peer_u32,
@@ -54,35 +48,29 @@ __global__ void peerReadKernelV4(
 {
     const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
     const size_t stride = gridDim.x * blockDim.x;
-
     unsigned long long acc = 0ull;
 
     for (size_t i = tid; i < n_vec4; i += stride) {
         const uint32_t* src_ptr = src_peer_u32 + (i << 2);
         uint32_t* dst_ptr       = dst_local_u32  + (i << 2);
-
         uint32_t x0, x1, x2, x3;
-        asm volatile(
-            "ld.volatile.global.v4.u32 {%0,%1,%2,%3}, [%4];\n"
-            : "=r"(x0), "=r"(x1), "=r"(x2), "=r"(x3)
-            : "l"(src_ptr)
-            : "memory");
 
-        asm volatile(
-            "st.volatile.global.v4.u32 [%0], {%1,%2,%3,%4};\n"
-            :
-            : "l"(dst_ptr), "r"(x0), "r"(x1), "r"(x2), "r"(x3)
-            : "memory");
-
+        asm volatile("ld.volatile.global.v4.u32 {%0,%1,%2,%3}, [%4];"
+                     : "=r"(x0), "=r"(x1), "=r"(x2), "=r"(x3)
+                     : "l"(src_ptr) : "memory");
+        asm volatile("st.volatile.global.v4.u32 [%0], {%1,%2,%3,%4};"
+                     :
+                     : "l"(dst_ptr), "r"(x0), "r"(x1), "r"(x2), "r"(x3)
+                     : "memory");
         acc += (unsigned long long)x0 + x1 + x2 + x3;
     }
+
     __syncthreads();
     __threadfence_system();
-
     if (tid == 0) atomicAdd(checksum, acc);
 }
 
-// Check CUDA errors
+// CUDA error check
 void checkCuda(cudaError_t err) {
     if (err != cudaSuccess) {
         std::cerr << "CUDA Error: " << cudaGetErrorString(err) << std::endl;
@@ -91,16 +79,17 @@ void checkCuda(cudaError_t err) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " <1|2> <read|write>" << std::endl;
+    if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " <1|2> <read|write> [base GPU 0|1 for 1-way]" << std::endl;
         return 1;
     }
 
-    int mode = std::stoi(argv[1]);
-    std::string op = argv[2];
+    int mode = std::stoi(argv[1]);          // 1: one-way, 2: two-way
+    std::string op = argv[2];               // "read" or "write"
+    int base_gpu = 0;                        // default base GPU
+    if (mode == 1 && argc >= 4) base_gpu = std::stoi(argv[3]);
 
-    size_t n_vec4 = DATA_SIZE / (4 * sizeof(uint32_t)); // number of 16B vectors
-    // size_t copyElements = DATA_SIZE / sizeof(int);
+    size_t n_vec4 = DATA_SIZE / (4 * sizeof(uint32_t));
     int gridSize = (n_vec4 + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
     uint32_t *d_src0, *d_src1, *d_dst0, *d_dst1;
@@ -128,81 +117,101 @@ int main(int argc, char* argv[]) {
     int canAccess01, canAccess10;
     cudaDeviceCanAccessPeer(&canAccess01, 0, 1);
     cudaDeviceCanAccessPeer(&canAccess10, 1, 0);
-    if (canAccess01) { checkCuda(cudaSetDevice(0)); checkCuda(cudaDeviceEnablePeerAccess(1, 0)); }
-    if (canAccess10) { checkCuda(cudaSetDevice(1)); checkCuda(cudaDeviceEnablePeerAccess(0, 0)); }
+    if (canAccess01) { checkCuda(cudaSetDevice(0)); checkCuda(cudaDeviceEnablePeerAccess(1,0)); }
+    if (canAccess10) { checkCuda(cudaSetDevice(1)); checkCuda(cudaDeviceEnablePeerAccess(0,0)); }
 
-    double total_time_sec = 0.0;
+    double total_time0 = 0.0, total_time1 = 0.0;
 
-    // for (int i = 0; i < REPEAT; i++) {
-    //     checkCuda(cudaSetDevice(0));
-    //     peerReadKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum0);
-    //     cudaDeviceSynchronize();
-    // }
-
+    // Repeat measurement
     for (int i = 0; i < REPEAT; i++) {
-        if (mode == 1) {            
-            checkCuda(cudaSetDevice(1));
-            auto t_start = std::chrono::high_resolution_clock::now();
+        if (mode == 1) {
+            // 1-way measurement
+            cudaEvent_t start, stop; float ms = 0.0f;
+            int gpu = base_gpu;
+            checkCuda(cudaSetDevice(gpu));
+            checkCuda(cudaEventCreate(&start));
+            checkCuda(cudaEventCreate(&stop));
+            checkCuda(cudaEventRecord(start));
 
-            // cudaEvent_t start, stop;
-            // checkCuda(cudaEventCreate(&start));
-            // checkCuda(cudaEventCreate(&stop));
-            // checkCuda(cudaEventRecord(start));
+            if (op == "read") {
+                if (gpu == 0) peerReadKernelV4<<<gridSize,BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum0);
+                else peerReadKernelV4<<<gridSize,BLOCK_SIZE>>>(d_dst1, d_src0, n_vec4, d_checksum1);
+            } else {
+                if (gpu == 0) peerWriteKernelV4<<<gridSize,BLOCK_SIZE>>>(d_dst1, d_src0, n_vec4, d_checksum0);
+                else peerWriteKernelV4<<<gridSize,BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum1);
+            }
 
-            if (op == "read")
-                peerReadKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, n_vec4, d_checksum1);
-            else
-                peerWriteKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum0);
+            checkCuda(cudaEventRecord(stop));
+            checkCuda(cudaEventSynchronize(stop));
+            checkCuda(cudaEventElapsedTime(&ms, start, stop));
 
-            checkCuda(cudaDeviceSynchronize());
-            auto t_end = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> diff = t_end - t_start;
-            total_time_sec += diff.count();
+            if (gpu == 0) total_time0 += ms/1000.0;
+            else total_time1 += ms/1000.0;
 
-            // checkCuda(cudaEventRecord(stop));
-            // checkCuda(cudaEventSynchronize(stop));
-            // float ms = 0.0f;
-            // checkCuda(cudaEventElapsedTime(&ms, start, stop));
-            // total_time_sec += ms / 1000.0;
-            // cudaEventDestroy(start);
-            // cudaEventDestroy(stop);
+            cudaEventDestroy(start); cudaEventDestroy(stop);
         } else {
-            // auto t_start = std::chrono::high_resolution_clock::now();
+            // 2-way measurement
+            cudaEvent_t start0, stop0, start1, stop1;
+            cudaStream_t stream0, stream1;
 
-            // Launch kernels
             checkCuda(cudaSetDevice(0));
-            if (op == "read")
-                peerReadKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum0);
-            else
-                peerWriteKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, n_vec4, d_checksum1);
+            checkCuda(cudaStreamCreate(&stream0));
+            checkCuda(cudaEventCreate(&start0)); 
+            checkCuda(cudaEventCreate(&stop0));
 
             checkCuda(cudaSetDevice(1));
-            auto t_start = std::chrono::high_resolution_clock::now();
-            if (op == "read")
-                peerReadKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst1, d_src0, n_vec4, d_checksum1);
-            else
-                peerWriteKernelV4<<<gridSize, BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum0);
+            checkCuda(cudaStreamCreate(&stream1));
+            checkCuda(cudaEventCreate(&start1));
+            checkCuda(cudaEventCreate(&stop1));
 
-            // Synchronize both devices
-            // checkCuda(cudaSetDevice(0)); cudaDeviceSynchronize();
-            checkCuda(cudaSetDevice(1)); cudaDeviceSynchronize();
+            checkCuda(cudaSetDevice(0));
+            checkCuda(cudaEventRecord(start0, stream0));
+            if (op == "read") peerReadKernelV4<<<gridSize,BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum0);
+            else peerWriteKernelV4<<<gridSize,BLOCK_SIZE>>>(d_dst1, d_src0, n_vec4, d_checksum1);
+            cudaEventRecord(stop0, stream0);
 
-            auto t_end = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> diff = t_end - t_start;
-            total_time_sec += diff.count();
+            checkCuda(cudaSetDevice(1));
+            checkCuda(cudaEventRecord(start1, stream1));
+            if (op == "read") peerReadKernelV4<<<gridSize,BLOCK_SIZE>>>(d_dst1, d_src0, n_vec4, d_checksum1);
+            else peerWriteKernelV4<<<gridSize,BLOCK_SIZE>>>(d_dst0, d_src1, n_vec4, d_checksum0);
+            cudaEventRecord(stop1, stream1); 
+
+            // Synchronize
+            checkCuda(cudaSetDevice(0)); cudaEventSynchronize(stop0);
+            checkCuda(cudaSetDevice(1)); cudaEventSynchronize(stop1);
+
+            float ms0=0.0f, ms1=0.0f;
+            checkCuda(cudaEventElapsedTime(&ms0, start0, stop0));
+            checkCuda(cudaEventElapsedTime(&ms1, start1, stop1));
+
+            total_time0 += ms0/1000.0;
+            total_time1 += ms1/1000.0;
+
+            cudaEventDestroy(start0); cudaEventDestroy(stop0);
+            cudaEventDestroy(start1); cudaEventDestroy(stop1);
         }
     }
 
-    double avg_time_sec = total_time_sec / REPEAT;
-    double throughput_GBps = (DATA_SIZE / 1.0e9) / avg_time_sec;
-
-    std::cout << "Mode: " << mode << ", Operation: " << op
-              << ", Avg Time: " << avg_time_sec << " s"
-              << ", Throughput: " << throughput_GBps << " GB/s" << std::endl;
+    // Compute and print average throughput with 2 decimal places
+    std::cout << std::fixed << std::setprecision(2);
+    if (mode == 1) {
+        double avg_time = (base_gpu==0) ? total_time0/REPEAT : total_time1/REPEAT;
+        double throughput = (DATA_SIZE/1.0e9)/avg_time;
+        std::cout << "1-way, base GPU " << base_gpu << ", Operation: " << op
+                  << ", Avg Throughput: " << throughput << " GB/s\n";
+    } else {
+        double avg0 = total_time0/REPEAT, avg1 = total_time1/REPEAT;
+        double tp0 = (DATA_SIZE/1.0e9)/avg0, tp1 = (DATA_SIZE/1.0e9)/avg1;
+        std::cout << "2-way, GPU0->GPU1 Avg: " << tp0 << " GB/s\n"
+                  << "2-way, GPU1->GPU0 Avg: " << tp1 << " GB/s\n";
+    }
 
     // Cleanup
-    checkCuda(cudaSetDevice(0)); cudaFree(d_src0); cudaFree(d_dst0); cudaFree(d_checksum0);
-    checkCuda(cudaSetDevice(1)); cudaFree(d_src1); cudaFree(d_dst1); cudaFree(d_checksum1);
+    checkCuda(cudaSetDevice(0));
+    cudaFree(d_src0); cudaFree(d_dst0); cudaFree(d_checksum0);
+
+    checkCuda(cudaSetDevice(1));
+    cudaFree(d_src1); cudaFree(d_dst1); cudaFree(d_checksum1);
 
     return 0;
 }
