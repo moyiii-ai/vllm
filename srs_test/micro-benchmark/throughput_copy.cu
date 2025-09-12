@@ -38,13 +38,13 @@ int main(int argc, char* argv[]) {
     checkCuda(cudaSetDevice(0));
     checkCuda(cudaMalloc(&d_src0, DATA_SIZE));
     checkCuda(cudaMalloc(&d_dst0, DATA_SIZE));
-    checkCuda(cudaMemset(d_src0, 1, DATA_SIZE));
+    checkCuda(cudaMemset(d_src0, 3, DATA_SIZE));
     checkCuda(cudaMemset(d_dst0, 0, DATA_SIZE));
 
     checkCuda(cudaSetDevice(1));
     checkCuda(cudaMalloc(&d_src1, DATA_SIZE));
     checkCuda(cudaMalloc(&d_dst1, DATA_SIZE));
-    checkCuda(cudaMemset(d_src1, 1, DATA_SIZE));
+    checkCuda(cudaMemset(d_src1, 3, DATA_SIZE));
     checkCuda(cudaMemset(d_dst1, 0, DATA_SIZE));
 
     int canAccess01, canAccess10;
@@ -67,6 +67,9 @@ int main(int argc, char* argv[]) {
     checkCuda(cudaEventCreate(&stop1));
 
     double total_time0 = 0.0, total_time1 = 0.0;
+
+    printf("Press Enter to start the benchmark...\n");
+    getchar();
 
     for (int i = 0; i < REPEAT; i++) {
         if (mode == 1) {

@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
     checkCuda(cudaMalloc(&d_src0, DATA_SIZE));
     checkCuda(cudaMalloc(&d_dst0, DATA_SIZE));
     checkCuda(cudaMalloc(&d_checksum0, sizeof(unsigned long long)));
-    checkCuda(cudaMemset(d_src0, 1, DATA_SIZE));
+    checkCuda(cudaMemset(d_src0, 5, DATA_SIZE));
     checkCuda(cudaMemset(d_dst0, 0, DATA_SIZE));
     checkCuda(cudaMemset(d_checksum0, 0, sizeof(unsigned long long)));
 
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
     checkCuda(cudaMalloc(&d_src1, DATA_SIZE));
     checkCuda(cudaMalloc(&d_dst1, DATA_SIZE));
     checkCuda(cudaMalloc(&d_checksum1, sizeof(unsigned long long)));
-    checkCuda(cudaMemset(d_src1, 1, DATA_SIZE));
+    checkCuda(cudaMemset(d_src1, 5, DATA_SIZE));
     checkCuda(cudaMemset(d_dst1, 0, DATA_SIZE));
     checkCuda(cudaMemset(d_checksum1, 0, sizeof(unsigned long long)));
 
@@ -121,6 +121,9 @@ int main(int argc, char* argv[]) {
     if (canAccess10) { checkCuda(cudaSetDevice(1)); checkCuda(cudaDeviceEnablePeerAccess(0,0)); }
 
     double total_time0 = 0.0, total_time1 = 0.0;
+
+    printf("Press Enter to start the benchmark...\n");
+    getchar();
 
     // Repeat measurement
     for (int i = 0; i < REPEAT; i++) {
