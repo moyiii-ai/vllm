@@ -99,16 +99,18 @@ class CudaCommunicator(DeviceCommunicatorBase):
             out = qr_comm.quick_all_reduce(input_)
             assert out is not None
             return out
-        ca_comm = self.ca_comm
-        if ca_comm is not None and not ca_comm.disabled and \
-            ca_comm.should_custom_ar(input_):
-            out = ca_comm.custom_all_reduce(input_)
-            assert out is not None
-            return out
+        # ca_comm = self.ca_comm
+        # if ca_comm is not None and not ca_comm.disabled and \
+        #     ca_comm.should_custom_ar(input_):
+        #     out = ca_comm.custom_all_reduce(input_)
+        #     assert out is not None
+        #     return out
         pynccl_comm = self.pynccl_comm
         assert pynccl_comm is not None
         out = pynccl_comm.all_reduce(input_)
+        # logger.info("SRS Log: NCCL all-reduce fallback.")
         if out is None:
+            # logger.info("SRS Log: torch all-reduce fallback.")
             # fall back to the default all-reduce using PyTorch.
             # this usually happens during testing.
             # when we run the model, allreduce only happens for the TP
