@@ -11,7 +11,7 @@ DATASET_PART2="narrativeqa.jsonl"
 
 BENCHMARK_SCRIPT="../benchmarks/benchmark_serving_xingyu.py"
 
-TOTAL_REQUEST_RATE=0.4
+TOTAL_REQUEST_RATE=2.4
 TOTAL_NUM_PROMPTS=800
 NUM_PROCS=2  # Number of parallel processes
 BASE_PORT=8000
@@ -19,7 +19,7 @@ BASE_PORT=8000
 # Calculate request rate and prompts per process
 # REQ_RATE=$(awk "BEGIN{printf \"%.2f\", $TOTAL_REQUEST_RATE / $NUM_PROCS}")
 REQ_RATE=$TOTAL_REQUEST_RATE
-PROMPTS=$((TOTAL_NUM_PROMPTS / NUM_PROCS))
+PROMPTS=$TOTAL_NUM_PROMPTS
 
 # Array to store process IDs
 PIDS=()

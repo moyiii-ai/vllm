@@ -359,6 +359,44 @@ def plot_comparative_metrics_rate(df, metric_type, output_file, min_rate=None, m
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
     print(f"Plot saved to: {output_file}\n")
 
+def plot_lmcache_throughput(df, metric_type, output_file, min_rate=None, max_rate=None):
+    plt.figure(figsize=(12, 7))
+    if min_rate is not None:
+        df = df[df['request_rate'] >= min_rate]
+    if max_rate is not None:
+        df = df[df['request_rate'] <= max_rate]
+    metric_config = {
+        'request_throughput': ('Total Throughput (req/s)', 'Input Request Rate vs Total Throughput')
+    }
+    y_label, title = metric_config.get(metric_type, (metric_type, metric_type))
+    all_rates = df['request_rate'].unique()
+    df_valid = df
+    valid_rates = all_rates.tolist()
+    print(f"Plotting {metric_type} (lmcache only): {len(valid_rates)}/{len(all_rates)} valid request rates")
+    dataset_data = df_valid[df_valid['dataset'] == 'lmcache'].sort_values(by='request_rate')
+    if not dataset_data.empty:
+        plt.plot(
+            dataset_data['request_rate'],
+            dataset_data[metric_type],
+            color='#1f77b4',
+            marker='o',
+            label='lmcache',
+            linewidth=2,
+            markersize=8,
+            alpha=0.8
+        )
+    ticks = np.arange(0.4, max_rate + 0.1, 0.4)
+    plt.xticks(ticks)
+    plt.xlabel('Input Request Rate (req/s)', fontsize=12, fontweight='bold')
+    plt.ylabel(y_label, fontsize=12, fontweight='bold')
+    plt.title(f'{title}', fontsize=14, fontweight='bold', pad=15)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3, linestyle='--')
+    plt.tight_layout()
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    print(f"Plot saved to: {output_file}\n")
+
+
 def generate_grouped_output(combined_df):
     """Generate grouped output (CSV + console print) by request rate
     Args:
@@ -447,9 +485,9 @@ def main():
         if dir_df is not None:
             all_data.append(dir_df)
             # Save individual directory CSV (keep original feature)
-            dir_csv_path = f"{dir_name}_summary.csv"
-            dir_df.to_csv(dir_csv_path, index=False)
-            print(f"Saved individual summary for {dir_name} to: {dir_csv_path}\n")
+            # dir_csv_path = f"{dir_name}_summary.csv"
+            # dir_df.to_csv(dir_csv_path, index=False)
+            # print(f"Saved individual summary for {dir_name} to: {dir_csv_path}\n")
     
     # Exit if no valid data was collected
     if not all_data:
@@ -472,7 +510,7 @@ def main():
     
     if not valid_plot_df.empty:
         print("=== Generating Comparative Plots ===")
-        my_max_rate = 4.0
+        my_max_rate = 2.8
         # plot_comparative_metrics_throughput(valid_plot_df, 'mean_ttft_ms', 'throughput_mean_ttft.png', max_rate=my_max_rate)
         # plot_comparative_metrics_throughput(valid_plot_df, 'mean_tpot_ms', 'throughput_mean_tpot.png', max_rate=my_max_rate)
         # plot_comparative_metrics_throughput(valid_plot_df, 'p99_ttft_ms', 'throughput_p99_ttft.png', max_rate=my_max_rate)
@@ -485,6 +523,7 @@ def main():
         plot_comparative_metrics_rate(valid_plot_df, 'p99_tpot_ms', 'rate_p99_tpot.png', max_rate=my_max_rate)
         plot_comparative_metrics_rate(valid_plot_df, 'p99_itl_ms', 'rate_p99_itl.png', max_rate=my_max_rate)
         plot_comparative_metrics_rate(valid_plot_df, 'request_throughput', 'rate_throughput.png', max_rate=my_max_rate)
+        plot_lmcache_throughput(valid_plot_df, 'request_throughput', 'lmcache_throughput.png', max_rate=my_max_rate)
     else:
         print("Warning: Insufficient valid data to generate comparative plots.")
 
