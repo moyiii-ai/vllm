@@ -216,6 +216,7 @@ srs_test/micro-benchmark/*
 !srs_test/micro-benchmark/*.*
 srs_test/**/*.json
 !srs_test/moe-benchmark/**/*.json
+srs_test/**/*.dat
 srs_test/**/*.log
 srs_test/**/*.png
 srs_test/**/*.deb
