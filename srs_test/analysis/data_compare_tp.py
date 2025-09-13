@@ -7,7 +7,8 @@ import re
 TARGET_MAP = {
     'tp_copy': 'custom all reduce',
     'tp_global': 'NCCL all reduce',
-    'simple': 'NCCL all reduce without TP'
+    # 'simple': 'NCCL all reduce without TP'
+    'tp_small': 'custom all reduce with small dataset'
 }
 
 def extract_tp_metrics(json_file, dataset_name):

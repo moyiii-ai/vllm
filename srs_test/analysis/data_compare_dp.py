@@ -527,5 +527,23 @@ def main():
     else:
         print("Warning: Insufficient valid data to generate comparative plots.")
 
+    request_throughput_df = valid_plot_df[['request_rate', 'dataset', 'request_throughput']].copy()
+
+    # Pivot so that each dataset is a separate column
+    request_throughput_csv = request_throughput_df.pivot(index='request_rate', columns='dataset', values='request_throughput')
+
+    # Optional: rename columns to match your desired CSV format
+    request_throughput_csv = request_throughput_csv.rename(columns={
+        'lmcache': 'throughput_lmcache',
+        'dp_lmcache_g4': 'throughput_dp_lmcache_g4',
+        'dp_lmcache_g5': 'throughput_dp_lmcache_g5'
+    }).reset_index()
+
+    # Save to CSV
+    os.makedirs('csv_output', exist_ok=True)
+    csv_path = os.path.join('csv_output', 'dp_qps_throughput.csv')
+    request_throughput_csv.to_csv(csv_path, index=False)
+    print(f"Exported dp_qps_throughput CSV to: {csv_path}")
+
 if __name__ == "__main__":
     main()

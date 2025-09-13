@@ -1,8 +1,10 @@
 #!/bin/bash
 
 MODEL="meta-llama/Llama-3.1-8B-Instruct"
-DATASET_NAME="longbench"
-DATASET_PATH="narrativeqa.jsonl"
+# DATASET_NAME="longbench"
+# DATASET_PATH="narrativeqa.jsonl"
+DATASET_NAME="hf"
+DATASET_PATH="tatsu-lab/alpaca"
 BENCHMARK_SCRIPT="../benchmarks/benchmark_serving_xingyu.py"
 
 python3 "$BENCHMARK_SCRIPT" \
@@ -10,8 +12,8 @@ python3 "$BENCHMARK_SCRIPT" \
     --model "$MODEL" \
     --dataset-name "$DATASET_NAME" \
     --dataset-path "$DATASET_PATH" \
-    --request-rate 1.2 \
-    --num-prompts 100 \
+    --request-rate 128.0 \
+    --num-prompts 800 \
     --output-len 32 \
     --ignore-eos \
     --save-result

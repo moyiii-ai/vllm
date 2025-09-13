@@ -91,6 +91,8 @@ class CudaCommunicator(DeviceCommunicatorBase):
                 raise ValueError(f"Unknown all2all backend: {all2all_backend}")
 
     def all_reduce(self, input_):
+        # tensor_size_kb = input_.numel() * input_.element_size() / 1024
+        # logger.info(f"SRS Log: NCCL all-reduce fallback, tensor size: {tensor_size_kb:.2f} KB")
         # always try quick reduce first, then custom allreduce,
         # and then pynccl. (quick reduce just for ROCM MI3*)
         qr_comm = self.qr_comm
@@ -99,12 +101,12 @@ class CudaCommunicator(DeviceCommunicatorBase):
             out = qr_comm.quick_all_reduce(input_)
             assert out is not None
             return out
-        # ca_comm = self.ca_comm
-        # if ca_comm is not None and not ca_comm.disabled and \
-        #     ca_comm.should_custom_ar(input_):
-        #     out = ca_comm.custom_all_reduce(input_)
-        #     assert out is not None
-        #     return out
+        ca_comm = self.ca_comm
+        if ca_comm is not None and not ca_comm.disabled and \
+            ca_comm.should_custom_ar(input_):
+            out = ca_comm.custom_all_reduce(input_)
+            assert out is not None
+            return out
         pynccl_comm = self.pynccl_comm
         assert pynccl_comm is not None
         out = pynccl_comm.all_reduce(input_)
