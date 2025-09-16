@@ -11,7 +11,7 @@ DATASET_PART2="narrativeqa.jsonl"
 
 BENCHMARK_SCRIPT="../benchmarks/benchmark_serving_xingyu.py"
 
-TOTAL_REQUEST_RATE=2.4
+TOTAL_REQUEST_RATE=2.0
 TOTAL_NUM_PROMPTS=800
 NUM_PROCS=2  # Number of parallel processes
 BASE_PORT=8000

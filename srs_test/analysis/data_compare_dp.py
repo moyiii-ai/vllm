@@ -224,9 +224,9 @@ def plot_comparative_metrics_throughput(df, metric_type, output_file, min_rate=N
     
     # Dataset style configuration
     dataset_styles = {
-        'lmcache': {'color': '#1f77b4', 'marker': 'o', 'label': 'lmcache'},
-        'dp_lmcache_g4': {'color': '#2ca02c', 'marker': 's', 'label': 'dp_lmcache_g4'},
-        'dp_lmcache_g5': {'color': '#d62728', 'marker': '^', 'label': 'dp_lmcache_g5'}
+        'lmcache': {'color': '#1f77b4', 'marker': 'o', 'label': 'Signle GPU'},
+        'dp_lmcache_g4': {'color': '#2ca02c', 'marker': 's', 'label': 'DP in the same Virtual Switch'},
+        'dp_lmcache_g5': {'color': '#d62728', 'marker': '^', 'label': 'DP in different Virtual Switches'}
     }
     
     # Plot each dataset
@@ -305,9 +305,9 @@ def plot_comparative_metrics_rate(df, metric_type, output_file, min_rate=None, m
     
     # Dataset style configuration
     dataset_styles = {
-        'lmcache': {'color': '#1f77b4', 'marker': 'o', 'label': 'lmcache'},
-        'dp_lmcache_g4': {'color': '#2ca02c', 'marker': 's', 'label': 'dp_lmcache_g4'},
-        'dp_lmcache_g5': {'color': '#d62728', 'marker': '^', 'label': 'dp_lmcache_g5'}
+        'lmcache': {'color': '#1f77b4', 'marker': 'o', 'label': 'Signle GPU'},
+        'dp_lmcache_g4': {'color': '#2ca02c', 'marker': 's', 'label': 'DP in the same Virtual Switch'},
+        'dp_lmcache_g5': {'color': '#d62728', 'marker': '^', 'label': 'DP in different Virtual Switches'}
     }
     
     # Plot each dataset
@@ -529,21 +529,38 @@ def main():
 
     request_throughput_df = valid_plot_df[['request_rate', 'dataset', 'request_throughput']].copy()
 
-    # Pivot so that each dataset is a separate column
+    # request_throughput CSV
+    request_throughput_df = valid_plot_df[['request_rate', 'dataset', 'request_throughput']].copy()
     request_throughput_csv = request_throughput_df.pivot(index='request_rate', columns='dataset', values='request_throughput')
-
-    # Optional: rename columns to match your desired CSV format
     request_throughput_csv = request_throughput_csv.rename(columns={
         'lmcache': 'throughput_lmcache',
         'dp_lmcache_g4': 'throughput_dp_lmcache_g4',
         'dp_lmcache_g5': 'throughput_dp_lmcache_g5'
     }).reset_index()
+    request_throughput_csv.to_csv(os.path.join('csv_output', 'dp_qps_throughput.csv'), index=False)
+    print("Exported dp_qps_throughput CSV to: csv_output/dp_qps_throughput.csv")
 
-    # Save to CSV
-    os.makedirs('csv_output', exist_ok=True)
-    csv_path = os.path.join('csv_output', 'dp_qps_throughput.csv')
-    request_throughput_csv.to_csv(csv_path, index=False)
-    print(f"Exported dp_qps_throughput CSV to: {csv_path}")
+    # mean_ttft_ms CSV
+    mean_ttft_df = valid_plot_df[['request_rate', 'dataset', 'mean_ttft_ms']].copy()
+    mean_ttft_csv = mean_ttft_df.pivot(index='request_rate', columns='dataset', values='mean_ttft_ms')
+    mean_ttft_csv = mean_ttft_csv.rename(columns={
+        'lmcache': 'ttft_lmcache',
+        'dp_lmcache_g4': 'ttft_dp_lmcache_g4',
+        'dp_lmcache_g5': 'ttft_dp_lmcache_g5'
+    }).reset_index()
+    mean_ttft_csv.to_csv(os.path.join('csv_output', 'dp_qps_mean_ttft.csv'), index=False)
+    print("Exported dp_qps_mean_ttft CSV to: csv_output/dp_qps_mean_ttft.csv")
+
+    # p99_ttft_ms CSV
+    p99_ttft_df = valid_plot_df[['request_rate', 'dataset', 'p99_ttft_ms']].copy()
+    p99_ttft_csv = p99_ttft_df.pivot(index='request_rate', columns='dataset', values='p99_ttft_ms')
+    p99_ttft_csv = p99_ttft_csv.rename(columns={
+        'lmcache': 'ttft_lmcache',
+        'dp_lmcache_g4': 'ttft_dp_lmcache_g4',
+        'dp_lmcache_g5': 'ttft_dp_lmcache_g5'
+    }).reset_index()
+    p99_ttft_csv.to_csv(os.path.join('csv_output', 'dp_qps_p99_ttft.csv'), index=False)
+    print("Exported dp_qps_p99_ttft CSV to: csv_output/dp_qps_p99_ttft.csv")
 
 if __name__ == "__main__":
     main()

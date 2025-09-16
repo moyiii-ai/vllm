@@ -92,7 +92,7 @@ class CudaCommunicator(DeviceCommunicatorBase):
 
     def all_reduce(self, input_):
         # tensor_size_kb = input_.numel() * input_.element_size() / 1024
-        # logger.info(f"SRS Log: NCCL all-reduce fallback, tensor size: {tensor_size_kb:.2f} KB")
+        # logger.info(f"SRS Log: all-reduce, tensor size: {tensor_size_kb:.2f} KB")
         # always try quick reduce first, then custom allreduce,
         # and then pynccl. (quick reduce just for ROCM MI3*)
         qr_comm = self.qr_comm
@@ -122,6 +122,7 @@ class CudaCommunicator(DeviceCommunicatorBase):
         return out
 
     def reduce_scatter(self, input_: torch.Tensor, dim: int = -1):
+        # logger.info(f"SRS Log: reduce_scatter, input shape: {input_.shape}, dim: {dim}")
         world_size = self.world_size
         pynccl_comm = self.pynccl_comm
         assert pynccl_comm is not None
@@ -150,6 +151,7 @@ class CudaCommunicator(DeviceCommunicatorBase):
                         input_: torch.Tensor,
                         dim: int = -1,
                         sizes: Optional[list[int]] = None):
+        # logger.info(f"SRS Log: reduce_scatterv, input shape: {input_.shape}, dim: {dim}, sizes: {sizes}")
         world_size = self.world_size
         pynccl_comm = self.pynccl_comm
         assert pynccl_comm is not None
@@ -185,6 +187,7 @@ class CudaCommunicator(DeviceCommunicatorBase):
     def send(self, tensor: torch.Tensor, dst: Optional[int] = None) -> None:
         """Sends a tensor to the destination rank in a blocking way"""
         """NOTE: `dst` is the local rank of the destination rank."""
+        # logger.info(f"SRS Log: send, tensor shape: {tensor.shape}, dst: {dst}")
         if dst is None:
             dst = (self.rank_in_group + 1) % self.world_size
 
@@ -200,6 +203,7 @@ class CudaCommunicator(DeviceCommunicatorBase):
              src: Optional[int] = None) -> torch.Tensor:
         """Receives a tensor from the source rank."""
         """NOTE: `src` is the local rank of the source rank."""
+        # logger.info(f"SRS Log: recv, tensor size: {size}, dtype: {dtype}, src: {src}")
         if src is None:
             src = (self.rank_in_group - 1) % self.world_size
 
@@ -224,6 +228,7 @@ class CudaCommunicator(DeviceCommunicatorBase):
                     input_: Union[torch.Tensor, list[torch.Tensor]],
                     dim: int = 0,
                     sizes: Optional[list[int]] = None):
+        # logger.info(f"SRS Log: all-gatherv, input type: {type(input_)}, dim: {dim}, sizes: {sizes}")
         if dim != 0:
             raise NotImplementedError("only dim 0 all-gatherv is supported")
         world_size = self.world_size
