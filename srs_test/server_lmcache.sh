@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 
 export LMCACHE_CHUNK_SIZE=256
 export LMCACHE_LOCAL_CPU=True

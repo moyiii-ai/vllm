@@ -225,8 +225,8 @@ def plot_comparative_metrics_throughput(df, metric_type, output_file, min_rate=N
     # Dataset style configuration
     dataset_styles = {
         'lmcache': {'color': '#1f77b4', 'marker': 'o', 'label': 'Signle GPU'},
-        'dp_lmcache_g4': {'color': '#2ca02c', 'marker': 's', 'label': 'DP in the same Virtual Switch'},
-        'dp_lmcache_g5': {'color': '#d62728', 'marker': '^', 'label': 'DP in different Virtual Switches'}
+        'dp_lmcache_g4': {'color': '#2ca02c', 'marker': 's', 'label': 'DP in Distance 1'},
+        'dp_lmcache_g5': {'color': '#d62728', 'marker': '^', 'label': 'DP in Distance 2'}
     }
     
     # Plot each dataset
@@ -306,8 +306,8 @@ def plot_comparative_metrics_rate(df, metric_type, output_file, min_rate=None, m
     # Dataset style configuration
     dataset_styles = {
         'lmcache': {'color': '#1f77b4', 'marker': 'o', 'label': 'Signle GPU'},
-        'dp_lmcache_g4': {'color': '#2ca02c', 'marker': 's', 'label': 'DP in the same Virtual Switch'},
-        'dp_lmcache_g5': {'color': '#d62728', 'marker': '^', 'label': 'DP in different Virtual Switches'}
+        'dp_lmcache_g4': {'color': '#2ca02c', 'marker': 's', 'label': 'DP in Distance 1'},
+        'dp_lmcache_g5': {'color': '#d62728', 'marker': '^', 'label': 'DP in Distance 2'}
     }
     
     # Plot each dataset
@@ -345,7 +345,7 @@ def plot_comparative_metrics_rate(df, metric_type, output_file, min_rate=None, m
             )
     
     # Plot formatting
-    ticks = np.arange(0.4, max_rate + 0.1, 0.4)
+    ticks = np.arange(0.3, max_rate + 0.1, 0.3)
     plt.xticks(ticks)
     plt.xlabel('Input Request Rate (req/s)', fontsize=12, fontweight='bold')
     # plt.xlabel('Request Throughput (req/s)', fontsize=12, fontweight='bold')
