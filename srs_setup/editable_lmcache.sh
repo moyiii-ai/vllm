@@ -6,7 +6,7 @@ set -e
 #     rm -rf "$SCRIPT_DIR/LMCache"
 # fi
 
-# git clone https://github.com/LMCache/LMCache.git
+# git clone git@github.com:moyiii-ai/LMCache.git
 cd LMCache
 # git checkout v0.3.3
 
