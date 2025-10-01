@@ -1,0 +1,6 @@
+[submodule "srs_setup/srs_setup/LMCache"]
+	path = srs_setup/srs_setup/LMCache
+	url = https://github.com/moyiii-ai/LMCache.git
+[submodule "srs_setup/LMCache"]
+	path = srs_setup/LMCache
+	url = https://github.com/moyiii-ai/LMCache.git
