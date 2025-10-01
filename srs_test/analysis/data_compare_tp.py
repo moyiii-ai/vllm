@@ -5,12 +5,14 @@ import pandas as pd
 import re
 
 TARGET_MAP = {
-    # 'tp_copy_distance1': 'custom all reduce in the distance1',
-    # 'tp_copy_distance2': 'custom all reduce in the distance2',
+    'tp_copy_distance1': 'NarrativeQA in Distance1',
+    'tp_copy_distance2': 'NarrativeQA in Distance2',
+    'tp_copy_distance3': 'NarrativeQA in Distance3',
     # 'tp_global_distance1': 'NCCL all reduce in the distance1',
-    'simple_alpaca': 'custom all reduce without TP',
-    'tp_alpaca_distance1': 'custom all reduce with Alpaca in the distance1',
-    'tp_alpaca_distance2': 'custom all reduce with Alpaca in the distance2'
+    # 'simple_alpaca': 'custom all reduce without TP',
+    'tp_alpaca_distance1': 'Alpaca in Distance1',
+    'tp_alpaca_distance2': 'Alpaca in Distance2',
+    'tp_alpaca_distance3': 'Alpaca in Distance3'
 }
 
 def extract_tp_metrics(json_file, dataset_name):
@@ -62,66 +64,108 @@ def process_directory(dir_name):
 
 import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
+
 def plot_metrics(df):
     copy_df = df[df['method'].isin([
         TARGET_MAP['tp_copy_distance1'],
-        TARGET_MAP['tp_copy_distance2']
+        TARGET_MAP['tp_copy_distance2'],
+        TARGET_MAP['tp_copy_distance3']
     ])]
     alpaca_df = df[df['method'].isin([
         TARGET_MAP['tp_alpaca_distance1'],
-        TARGET_MAP['tp_alpaca_distance2']
+        TARGET_MAP['tp_alpaca_distance2'],
+        TARGET_MAP['tp_alpaca_distance3']
     ])]
 
-    # Figure 1: Copy distance1 vs distance2 - mean_ttft_ms
+    # Figure 1: Copy Distance1/2/3 - mean_ttft_ms
     plt.figure()
     for method in copy_df['method'].unique():
         sub = copy_df[copy_df['method'] == method]
-        plt.plot(sub['request_rate'], sub['mean_ttft_ms'] / 1000, marker='o', label=method)
+        if "distance1" in method.lower():
+            label = "Distance1"
+        elif "distance2" in method.lower():
+            label = "Distance2"
+        elif "distance3" in method.lower():
+            label = "Distance3"
+        else:
+            label = method
+        plt.plot(sub['request_rate'], sub['mean_ttft_ms'] / 1000, marker='o', label=label)
     plt.xlabel("Request Rate (qps)")
     plt.ylabel("Mean TTFT (s)")
-    plt.title("NarrativeQA Distance1 vs Distance2 - TTFT")
+    plt.title("NarrativeQA Distance1/2/3 - TTFT")
+    plt.xticks(copy_df['request_rate'].unique(),
+               labels=[str(r) for r in copy_df['request_rate'].unique()])
     plt.legend()
     plt.grid(True)
     plt.savefig("copy_ttft.png", dpi=300)
 
-    # Figure 2: Copy distance1 vs distance2 - mean_tpot_ms
+    # Figure 2: Copy Distance1/2/3 - mean_tpot_ms
     plt.figure()
     for method in copy_df['method'].unique():
         sub = copy_df[copy_df['method'] == method]
-        plt.plot(sub['request_rate'], sub['mean_tpot_ms'] / 1000, marker='o', label=method)
+        if "distance1" in method.lower():
+            label = "Distance1"
+        elif "distance2" in method.lower():
+            label = "Distance2"
+        elif "distance3" in method.lower():
+            label = "Distance3"
+        else:
+            label = method
+        plt.plot(sub['request_rate'], sub['mean_tpot_ms'] / 1000, marker='o', label=label)
     plt.xlabel("Request Rate (qps)")
     plt.ylabel("Mean TPOT (s)")
-    plt.title("NarrativeQA Distance1 vs Distance2 - TPOT")
+    plt.title("NarrativeQA Distance1/2/3 - TPOT")
+    plt.xticks(copy_df['request_rate'].unique(),
+               labels=[str(r) for r in copy_df['request_rate'].unique()])
     plt.legend()
     plt.grid(True)
     plt.savefig("copy_tpot.png", dpi=300)
 
-    # Figure 3: Alpaca distance1 vs distance2 - mean_ttft_ms (log x-axis)
+    # Figure 3: Alpaca Distance1/2/3 - mean_ttft_ms (log x-axis)
     plt.figure()
     for method in alpaca_df['method'].unique():
         sub = alpaca_df[alpaca_df['method'] == method]
-        plt.semilogx(sub['request_rate'], sub['mean_ttft_ms'], marker='o', label=method)
+        if "distance1" in method.lower():
+            label = "Distance1"
+        elif "distance2" in method.lower():
+            label = "Distance2"
+        elif "distance3" in method.lower():
+            label = "Distance3"
+        else:
+            label = method
+        plt.semilogx(sub['request_rate'], sub['mean_ttft_ms'], marker='o', label=label)
     plt.xlabel("Request Rate (qps, log scale)")
     plt.ylabel("Mean TTFT (ms)")
-    plt.title("Alpaca Distance1 vs Distance2 - TTFT")
+    plt.title("Alpaca Distance1/2/3 - TTFT")
     plt.legend()
     plt.grid(True, which="both")
     plt.ylim(bottom=0)
-    plt.xticks(alpaca_df['request_rate'].unique(), labels=[str(r) for r in alpaca_df['request_rate'].unique()])
+    plt.xticks(alpaca_df['request_rate'].unique(),
+               labels=[str(r) for r in alpaca_df['request_rate'].unique()])
     plt.savefig("alpaca_ttft.png", dpi=300)
 
-    # Figure 4: Alpaca distance1 vs distance2 - mean_tpot_ms (log x-axis)
+    # Figure 4: Alpaca Distance1/2/3 - mean_tpot_ms (log x-axis)
     plt.figure()
     for method in alpaca_df['method'].unique():
         sub = alpaca_df[alpaca_df['method'] == method]
-        plt.semilogx(sub['request_rate'], sub['mean_tpot_ms'], marker='o', label=method)
+        if "distance1" in method.lower():
+            label = "Distance1"
+        elif "distance2" in method.lower():
+            label = "Distance2"
+        elif "distance3" in method.lower():
+            label = "Distance3"
+        else:
+            label = method
+        plt.semilogx(sub['request_rate'], sub['mean_tpot_ms'], marker='o', label=label)
     plt.xlabel("Request Rate (qps, log scale)")
     plt.ylabel("Mean TPOT (ms)")
-    plt.title("Alpaca Distance1 vs Distance2 - TPOT")
+    plt.title("Alpaca Distance1/2/3 - TPOT")
     plt.legend()
     plt.grid(True, which="both")
     plt.ylim(bottom=0)
-    plt.xticks(alpaca_df['request_rate'].unique(), labels=[str(r) for r in alpaca_df['request_rate'].unique()])
+    plt.xticks(alpaca_df['request_rate'].unique(),
+               labels=[str(r) for r in alpaca_df['request_rate'].unique()])
     plt.savefig("alpaca_tpot.png", dpi=300)
 
     plt.show()
@@ -149,7 +193,7 @@ def main():
                          'mean_tpot_ms', 'p99_tpot_ms', 'mean_itl_ms']].to_string(index=False))
         print("-" * 80)
 
-    # plot_metrics(combined_df)
+    plot_metrics(combined_df)
 
 if __name__ == "__main__":
     main()

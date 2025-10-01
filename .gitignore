@@ -224,3 +224,4 @@ srs_test/**/*.nsys-rep
 srs_test/**/*.sqlite
 srs_test/**/*.ncu-rep
 srs_test/**/*.result
+srs_test/micro-benchmark/*.txt
