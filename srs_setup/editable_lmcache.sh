@@ -8,7 +8,7 @@ set -e
 
 # git clone https://github.com/LMCache/LMCache.git
 cd LMCache
-git checkout v0.3.3
+# git checkout v0.3.3
 
 pip uninstall -y lmcache
 

@@ -51,13 +51,13 @@ int main(int argc, char* argv[]) {
 
     // data size
     std::vector<size_t> data_sizes = {
-        4ULL * 1024,                  // 4 KB
-        32ULL * 1024,                 // 32 KB
-        128ULL * 1024,                 // 64 KB
-        512ULL * 1024,                // 512 KB
-        1ULL * 1024 * 1024,           // 1 MB
-        100ULL * 1024 * 1024,         // 100 MB
-        1ULL * 1024 * 1024 * 1024,     // 1 GB
+        // 4ULL * 1024,                  // 4 KB
+        // 32ULL * 1024,                 // 32 KB
+        // 128ULL * 1024,                 // 64 KB
+        // 512ULL * 1024,                // 512 KB
+        // 1ULL * 1024 * 1024,           // 1 MB
+        // 100ULL * 1024 * 1024,         // 100 MB
+        // 1ULL * 1024 * 1024 * 1024,     // 1 GB
         8ULL * 1024 * 1024 * 1024    // 8 GB
     };
 

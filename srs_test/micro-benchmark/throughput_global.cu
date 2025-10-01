@@ -103,13 +103,13 @@ int main(int argc, char* argv[]) {
     if (mode == 1 && argc >= 4) base_gpu = std::stoi(argv[3]);
 
     std::vector<size_t> data_sizes = {
-        4ULL * 1024ULL,                    // 4 KB
-        32ULL * 1024ULL,                   // 32 KB
-        128ULL * 1024ULL,                  // 128 KB
-        512ULL * 1024ULL,                  // 512 KB
-        1ULL * 1024ULL * 1024ULL,          // 1 MB
-        100ULL * 1024ULL * 1024ULL,        // 100 MB
-        1ULL * 1024ULL * 1024ULL * 1024ULL, // 1 GB
+        // 4ULL * 1024ULL,                    // 4 KB
+        // 32ULL * 1024ULL,                   // 32 KB
+        // 128ULL * 1024ULL,                  // 128 KB
+        // 512ULL * 1024ULL,                  // 512 KB
+        // 1ULL * 1024ULL * 1024ULL,          // 1 MB
+        // 100ULL * 1024ULL * 1024ULL,        // 100 MB
+        // 1ULL * 1024ULL * 1024ULL * 1024ULL, // 1 GB
         8ULL * 1024ULL * 1024ULL * 1024ULL  // 8 GB
     };
 
