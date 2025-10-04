@@ -225,3 +225,5 @@ srs_test/**/*.sqlite
 srs_test/**/*.ncu-rep
 srs_test/**/*.result
 srs_test/micro-benchmark/*.txt
+srs_test/*.txt
+srs_test/rdma_replay/bin/
