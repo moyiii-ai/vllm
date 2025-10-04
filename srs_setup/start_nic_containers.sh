@@ -25,6 +25,9 @@ docker run -dit \
   --cpuset-cpus=0-15 \
   --gpus "device=$CTN0_GPU" \
   --cap-add=NET_ADMIN \
+  --cap-add=IPC_LOCK \
+  --device=/dev/infiniband/uverbs0 \
+  --device=/dev/infiniband/rdma_cm \
   -v $VLLM_PATH:/vllm-workspace/vllm \
   -v $SSH_PATH:/root/.ssh \
   -w $WORKDIR \
@@ -36,6 +39,9 @@ docker run -dit \
   --cpuset-mems=1 \
   --cpuset-cpus=16-31 \
   --cap-add=NET_ADMIN \
+  --cap-add=IPC_LOCK \
+  --device=/dev/infiniband/uverbs5 \
+  --device=/dev/infiniband/rdma_cm \
   -w $WORKDIR \
   --entrypoint sleep \
   $IMAGE infinity
@@ -48,10 +54,16 @@ CTN1_PID=$(docker inspect -f '{{.State.Pid}}' $CTN1_NAME)
 sudo ip link set $CTN0_NIC netns $CTN0_PID
 sudo nsenter -t $CTN0_PID -n ip link set $CTN0_NIC up
 sudo nsenter -t $CTN0_PID -n ip addr add $CTN0_IP dev $CTN0_NIC
+# sudo nsenter -t $CTN0_PID -m mkdir -p /dev/infiniband/
+# #sudo nsenter -t $CTN0_PID -m bash -c "touch /dev/infiniband/uverbs0 && chmod 666 /dev/infiniband/uverbs0"
+# sudo nsenter -t $CTN0_PID -m mount --bind /dev/infiniband/uverbs0 /dev/infiniband/uverbs0
 
 sudo ip link set $CTN1_NIC netns $CTN1_PID
 sudo nsenter -t $CTN1_PID -n ip link set $CTN1_NIC up
 sudo nsenter -t $CTN1_PID -n ip addr add $CTN1_IP dev $CTN1_NIC
+# sudo nsenter -t $CTN1_PID -m mkdir -p /dev/infiniband/
+# # sudo nsenter -t $CTN1_PID -m bash -c "touch /dev/infiniband/uverbs5 && chmod 666 /dev/infiniband/uverbs5"
+# sudo nsenter -t $CTN1_PID -m mount --bind /dev/infiniband/uverbs5 /dev/infiniband/uverbs5
 
 # Test container-to-container connectivity via physical NIC
 echo "Testing connectivity..."

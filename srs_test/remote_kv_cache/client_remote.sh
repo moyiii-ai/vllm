@@ -11,7 +11,7 @@ python3 "$BENCHMARK_SCRIPT" \
     --dataset-name "$DATASET_NAME" \
     --dataset-path "$DATASET_PATH" \
     --request-rate 2.0 \
-    --num-prompts 800 \
+    --num-prompts 200 \
     --output-len 32 \
     --ignore-eos \
     --save-result
