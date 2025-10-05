@@ -227,3 +227,8 @@ srs_test/**/*.result
 srs_test/micro-benchmark/*.txt
 srs_test/*.txt
 srs_test/rdma_replay/bin/
+srs_test/rdma_replay/CMakeFiles/
+srs_test/rdma_replay/CMakeCache.txt
+srs_test/rdma_replay/Makefile
+srs_test/rdma_replay/cmake_install.cmake
+srs_test/rdma_replay/remote_trace.txt

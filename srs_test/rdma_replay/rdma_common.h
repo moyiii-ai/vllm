@@ -74,6 +74,14 @@ int get_addr(char *dst, struct sockaddr *addr);
 /* prints RDMA buffer info structure */
 void show_rdma_buffer_attr(struct rdma_buffer_attr *attr);
 
+struct TraceEvent {
+    enum { RETRIEVE, OFFLOAD } type;
+    uint32_t data_size;
+    uint64_t timestamp;
+};
+
+#define SERVER_BUFFER_SIZE 1048576
+
 /* 
  * Processes an RDMA connection management (CM) event. 
  * @echannel: CM event channel where the event is expected. 
