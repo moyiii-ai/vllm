@@ -297,6 +297,8 @@ static int load_trace() {
         return -1;
     }
 
+    int offload_count = 0, retrieve_count = 0;
+
     while (fgets(line, sizeof(line), file)) {
         regmatch_t pmatch[3];
         if (regexec(&retrieve_re, line, 3, pmatch, 0) == 0) {
@@ -305,12 +307,14 @@ static int load_trace() {
             events[event_count].data_size = atoi(&line[pmatch[1].rm_so]);
             events[event_count].timestamp = atoll(&line[pmatch[2].rm_so]);
             event_count++;
+            retrieve_count++;
         } else if (regexec(&offload_re, line, 3, pmatch, 0) == 0) {
             if (event_count >= MAX_TRACE_COUNT) break;
             events[event_count].type = OFFLOAD;
             events[event_count].data_size = atoi(&line[pmatch[1].rm_so]);
             events[event_count].timestamp = atoll(&line[pmatch[2].rm_so]);
             event_count++;
+            offload_count++;
         }
     }
 
@@ -323,6 +327,7 @@ static int load_trace() {
     regfree(&offload_re);
     fclose(file);
     printf("Loaded %d events from trace file\n", event_count);
+    printf("Offload events: %d, Retrieve events: %d\n", offload_count, retrieve_count);
     return 0;
 }
 
