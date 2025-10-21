@@ -2,7 +2,7 @@ import re
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-files = ["distance1.txt", "distance2.txt", "distance3.txt"]
+files = ["distance1.log", "distance2.log", "distance3.log"]
 distances = ["distance1", "distance2", "distance3"]
 
 data = {}

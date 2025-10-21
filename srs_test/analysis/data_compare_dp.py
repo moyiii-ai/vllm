@@ -273,44 +273,31 @@ def plot_comparative_metrics_rate(df, metric_type, output_file, min_rate=None, m
     if max_rate is not None:
         df = df[df['request_rate'] <= max_rate]
     
-    # Plot configuration for each metric
     metric_config = {
-        'mean_ttft_ms': ('Mean TTFT (ms)', 'Input Request Rate vs Mean TTFT'),
-        'mean_tpot_ms': ('Mean TPOT (ms)', 'Input Request Rate vs Mean TPOT'),
-        'p99_ttft_ms': ('P99 TTFT (ms)', 'Input Request Rate vs P99 TTFT'),
-        'p99_tpot_ms': ('P99 TPOT (ms)', 'Input Request Rate vs P99 TPOT'),
-        'p99_itl_ms': ('P99 Inter-token Latency (ms)', 'Input Request Rate vs P99 ITL'),
+        'mean_ttft_ms': ('Mean TTFT (s)', 'Input Request Rate vs Mean TTFT'),
+        'mean_tpot_ms': ('Mean TPOT (s)', 'Input Request Rate vs Mean TPOT'),
+        'p99_ttft_ms': ('P99 TTFT (s)', 'Input Request Rate vs P99 TTFT'),
+        'p99_tpot_ms': ('P99 TPOT (s)', 'Input Request Rate vs P99 TPOT'),
+        'p99_itl_ms': ('P99 Inter-token Latency (s)', 'Input Request Rate vs P99 ITL'),
         'request_throughput': ('Total Throughput (req/s)', 'Input Request Rate vs Total Throughput')
     }
     y_label, title = metric_config.get(metric_type, (metric_type, metric_type))
     
-    # Filter valid request rates (full data from all 3 datasets)
+    # Convert ms -> s if metric is latency-based
+    if metric_type.endswith('_ms'):
+        df[metric_type] = df[metric_type] / 1000.0
+    
     all_rates = df['request_rate'].unique()
-    required_datasets = {'lmcache', 'dp_lmcache_g4', 'dp_lmcache_g5'}
-    valid_rates = []
-    
-    # for rate in all_rates:
-    #     rate_data = df[df['request_rate'] == rate]
-    #     present_datasets = set(rate_data['dataset'].unique())
-    #     # Check if all datasets exist and have non-None metric values
-    #     if present_datasets == required_datasets:
-    #         metric_values = rate_data[metric_type].dropna()
-    #         if len(metric_values) == 3:
-    #             valid_rates.append(rate)
-    
-    # df_valid = df[df['request_rate'].isin(valid_rates)]
     df_valid = df
     valid_rates = all_rates.tolist()
     print(f"Plotting {metric_type}: {len(valid_rates)}/{len(all_rates)} valid request rates")
     
-    # Dataset style configuration
     dataset_styles = {
-        'lmcache': {'color': '#1f77b4', 'marker': 'o', 'label': 'Signle GPU'},
+        'lmcache': {'color': '#1f77b4', 'marker': 'o', 'label': 'Single GPU'},
         'dp_lmcache_g4': {'color': '#2ca02c', 'marker': 's', 'label': 'DP in Distance 1'},
         'dp_lmcache_g5': {'color': '#d62728', 'marker': '^', 'label': 'DP in Distance 2'}
     }
     
-    # Plot each dataset
     for dataset, style in dataset_styles.items():
         dataset_data = df_valid[df_valid['dataset'] == dataset].sort_values(by='request_rate')
         if not dataset_data.empty:
@@ -326,38 +313,43 @@ def plot_comparative_metrics_rate(df, metric_type, output_file, min_rate=None, m
             )
 
     if metric_type == 'request_throughput':
-        # Get lmcache data
         lmcache_data = df_valid[df_valid['dataset'] == 'lmcache'].sort_values(by='request_rate')
         if not lmcache_data.empty:
-            # Calculate twice the throughput
             doubled_throughput = lmcache_data[metric_type] * 2
-            # Plot the yellow line
             plt.plot(
                 lmcache_data['request_rate'],
                 doubled_throughput,
-                color='#ffcc00',  # Yellow color
-                linestyle='--',   # Dashed line to distinguish
-                marker='x',       # Different marker
-                label='2x lmcache',
+                color='#ffcc00',
+                linestyle='--',
+                marker='x',
+                label='2x Single GPU',
                 linewidth=2,
                 markersize=8,
                 alpha=0.8
             )
     
-    # Plot formatting
-    ticks = np.arange(0.3, max_rate + 0.1, 0.3)
-    plt.xticks(ticks)
+    handles, labels = plt.gca().get_legend_handles_labels()
+    if metric_type == 'request_throughput':
+        order = ['2x Single GPU', 'DP in Distance 2', 'DP in Distance 1', 'Single GPU']
+    else:
+        order = ['DP in Distance 1', 'DP in Distance 2', 'Single GPU']
+    
+    handles_labels = sorted(zip(handles, labels), key=lambda x: order.index(x[1]) if x[1] in order else 999)
+    handles, labels = zip(*handles_labels)
+    plt.legend(handles, labels, fontsize=10)
+    
+    if max_rate is not None:
+        ticks = np.arange(0.3, max_rate + 0.1, 0.3)
+        plt.xticks(ticks)
     plt.xlabel('Input Request Rate (req/s)', fontsize=12, fontweight='bold')
-    # plt.xlabel('Request Throughput (req/s)', fontsize=12, fontweight='bold')
     plt.ylabel(y_label, fontsize=12, fontweight='bold')
     plt.title(f'{title}', fontsize=14, fontweight='bold', pad=15)
-    plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3, linestyle='--')
     plt.tight_layout()
     
-    # Save plot
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
     print(f"Plot saved to: {output_file}\n")
+
 
 def plot_lmcache_throughput(df, metric_type, output_file, min_rate=None, max_rate=None):
     plt.figure(figsize=(12, 7))

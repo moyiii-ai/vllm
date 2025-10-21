@@ -11,7 +11,7 @@ CPUSET_CPUS="16-31"
 CPUSET_MEMS="1"
 
 docker run -d \
-    --gpus '"device=2,3"' \
+    --gpus '"device=1,2"' \
     --cap-add=SYS_ADMIN \
     --security-opt seccomp=unconfined \
     --shm-size=$SHM_SIZE \
