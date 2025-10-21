@@ -233,3 +233,9 @@ srs_test/rdma_replay/CMakeCache.txt
 srs_test/rdma_replay/Makefile
 srs_test/rdma_replay/cmake_install.cmake
 srs_test/rdma_replay/remote_trace.txt
+
+srs_test/gdr/bin/
+srs_test/gdr/CMakeFiles/
+srs_test/gdr/CMakeCache.txt
+srs_test/gdr/Makefile
+srs_test/gdr/cmake_install.cmake
