@@ -4,7 +4,6 @@ set -e
 CTN0_NAME="ctn0"
 CTN1_NAME="ctn1"
 
-CTN0_GPU="0"
 CTN0_NIC="enp47s0np0"
 CTN0_IP="10.1.1.1/24"
 
@@ -21,9 +20,9 @@ SSH_PATH="$HOME/.ssh"
 # Run containers with default bridge (eth0)
 docker run -dit \
   --name $CTN0_NAME \
-  --cpuset-mems=0 \
-  --cpuset-cpus=0-15 \
-  --gpus "device=$CTN0_GPU" \
+  --cpuset-mems=1 \
+  --cpuset-cpus=16-31 \
+  --gpus '"device=1,2"' \
   --cap-add=NET_ADMIN \
   --cap-add=IPC_LOCK \
   --device=/dev/infiniband/uverbs0 \
@@ -36,8 +35,8 @@ docker run -dit \
 
 docker run -dit \
   --name $CTN1_NAME \
-  --cpuset-mems=1 \
-  --cpuset-cpus=16-31 \
+  --cpuset-mems=0 \
+  --cpuset-cpus=0-15 \
   --cap-add=NET_ADMIN \
   --cap-add=IPC_LOCK \
   --device=/dev/infiniband/uverbs5 \
