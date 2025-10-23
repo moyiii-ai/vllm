@@ -208,7 +208,7 @@ static int client_remote_memory_ops()
     printf("Client side 4MB WRITE loop ended\n");
     printf("Total data written: %.2f MB\n", (double)total_bytes / (1024.0 * 1024.0));
     printf("Elapsed time: %.2f s\n", elapsed_sec);
-    printf("Average throughput: %.2f GB/s\n", throughput_mb_s);
+    printf("Average throughput: %.2f GB/s\n", throughput_gb_s);
 
     return 0;
 }
