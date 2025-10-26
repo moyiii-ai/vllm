@@ -7,7 +7,6 @@
 
 #define GRID_SIZE 256
 #define BLOCK_SIZE 256
-#define REPEAT 100
 
 void checkCuda(cudaError_t err) {
   if (err != cudaSuccess) {
@@ -46,14 +45,14 @@ int main(int argc, char* argv[]) {
 
   // Fixed data sizes (bytes)
   std::vector<size_t> data_sizes = {
-      4ULL * 1024ULL,                      // 4 KB
-      32ULL * 1024ULL,                     // 32 KB
-      128ULL * 1024ULL,                    // 128 KB
-      512ULL * 1024ULL,                    // 512 KB
-      1ULL * 1024ULL * 1024ULL,            // 1 MB
-      100ULL * 1024ULL * 1024ULL,          // 100 MB
-      1ULL * 1024ULL * 1024ULL * 1024ULL,  // 1 GB
-      8ULL * 1024ULL * 1024ULL * 1024ULL   // 8 GB
+      // 4ULL * 1024ULL,                      // 4 KB
+      // 32ULL * 1024ULL,                     // 32 KB
+      // 128ULL * 1024ULL,                    // 128 KB
+      // 512ULL * 1024ULL,                    // 512 KB
+      // 1ULL * 1024ULL * 1024ULL,            // 1 MB
+      // 100ULL * 1024ULL * 1024ULL,          // 100 MB
+      // 1ULL * 1024ULL * 1024ULL * 1024ULL,  // 1 GB
+      8ULL * 1024ULL * 1024ULL * 1024ULL  // 8 GB
   };
 
   size_t max_size = data_sizes.back();
@@ -88,13 +87,18 @@ int main(int argc, char* argv[]) {
   }
 
   printf("Press Enter to start the memcpy benchmark...\n");
-  // getchar();
+  getchar();
 
   for (size_t si = 0; si < data_sizes.size(); ++si) {
     size_t DATA_SIZE = data_sizes[si];
     double total_time0 = 0.0, total_time1 = 0.0;
 
-    for (int iter = 0; iter < REPEAT; ++iter) {
+    int repeat = 100;
+    if (DATA_SIZE < (1ULL << 30)) {  // less than 1GB
+      repeat = 2000;
+    }
+
+    for (int iter = 0; iter < repeat; ++iter) {
       if (mode == 1) {
         // One-way
         int dst_gpu = (base_gpu == 0) ? 1 : 0;
@@ -191,13 +195,13 @@ int main(int argc, char* argv[]) {
     std::cout << std::fixed << std::setprecision(2);
     if (mode == 1) {
       double avg_time =
-          (base_gpu == 0) ? total_time0 / REPEAT : total_time1 / REPEAT;
+          (base_gpu == 0) ? total_time0 / repeat : total_time1 / repeat;
       double throughput = (double)DATA_SIZE / 1.0e9 / avg_time;
       std::cout << "DataSize: " << humanReadableSizeInteger(DATA_SIZE)
                 << ", 1-way, base GPU " << base_gpu << ", " << op
                 << " Avg Throughput: " << throughput << " GB/s\n";
     } else {
-      double avg0 = total_time0 / REPEAT, avg1 = total_time1 / REPEAT;
+      double avg0 = total_time0 / repeat, avg1 = total_time1 / repeat;
       double tp0 = (double)DATA_SIZE / 1.0e9 / avg0;
       double tp1 = (double)DATA_SIZE / 1.0e9 / avg1;
       std::cout << "DataSize: " << humanReadableSizeInteger(DATA_SIZE)

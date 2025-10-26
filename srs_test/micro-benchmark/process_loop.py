@@ -1,61 +1,115 @@
-import os
 import re
-from collections import defaultdict
+import os
+import glob
+import matplotlib.pyplot as plt
 
-# Pattern: extract throughput number before "GB/s"
-THROUGHPUT_RE = re.compile(r"Throughput:\s*([\d.]+)\s*GB/s")
+def parse_size(s):
+    s = s.upper()
+    if s.endswith("KB"):
+        return (s, int(float(s[:-2])*1024))
+    if s.endswith("MB"):
+        return (s, int(float(s[:-2])*1024**2))
+    if s.endswith("GB"):
+        return (s, int(float(s[:-2])*1024**3))
+    return (s, int(s))
 
-# Mapping from filename keyword → readable label
-KERNEL_LABELS = {
-    "copy": "copy kernel",
-    "global": "ld_st",
-    "cuda": "cudaMemcpyPeer"
-}
+throughput_re = re.compile(r"Throughput:\s*([\d.]+)\s*GB/s")
+script_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(script_dir, "result_loop")
+files = glob.glob(os.path.join(data_dir, "*.dat"))
 
-# Data structure: results[mode][direction][kernel] = throughput
-# e.g. results["1-way"]["Read"]["copy kernel"] = 272.59
-results = defaultdict(lambda: defaultdict(dict))
+data = {}
 
-# Traverse all .dat files in current directory
-for fname in sorted(f for f in os.listdir(".") if f.endswith(".dat")):
-    with open(fname, "r") as f:
-        content = f.read()
-
-    # extract throughput values
-    matches = THROUGHPUT_RE.findall(content)
-    if not matches:
+for f in files:
+    fname = os.path.basename(f)
+    m = re.match(r"(\d)_([a-z]+)_([a-z]+)_(.+)\.dat", fname)
+    if not m:
         continue
-    throughput = float(matches[0])  # for 2-way, only take first line
+    way, op, kernel, size_str = m.groups()
+    way = int(way)
+    op = op.lower()
+    kernel = kernel.lower()
+    size_label, size_val = parse_size(size_str)
 
-    # infer direction (read/write), kernel type, and mode (1-way or 2-way)
-    base = fname.lower()
-
-    # kernel type
-    kernel_type = next((KERNEL_LABELS[k] for k in KERNEL_LABELS if k in base), None)
-    if not kernel_type:
+    with open(f, "r") as fin:
+        content = fin.read()
+    m_tp = throughput_re.search(content)
+    if not m_tp:
         continue
+    tp = float(m_tp.group(1))
 
-    # read/write
-    direction = "Read" if "read" in base else "Write"
-
-    # 1-way or 2-way
-    if "two" in base or "2" in base:
-        mode = "2-way"
+    if kernel == "copy":
+        kernel_type = "copy kernel"
+    elif kernel == "global":
+        kernel_type = "ld_st"
+    elif kernel == "cuda":
+        kernel_type = "cudaMemcpyPeer"
     else:
-        mode = "1-way"
+        kernel_type = kernel
 
-    results[mode][direction][kernel_type] = throughput
+    data.setdefault(size_val, {"label": size_label})
+    data[size_val].setdefault(way, {}).setdefault(op, {})[kernel_type] = tp
 
-# Pretty print results
-def fmt_line(mode, direction):
-    items = []
-    for label in ["copy kernel", "ld_st", "cudaMemcpyPeer"]:
-        val = results[mode][direction].get(label)
-        if val is not None:
-            items.append(f"{label} {val:.2f} GB/s")
-    return f"{mode} {direction}: " + "   |   ".join(items)
+sizes = sorted(data.keys())
 
-print(fmt_line("1-way", "Read"))
-print(fmt_line("1-way", "Write"))
-print(fmt_line("2-way", "Read"))
-print(fmt_line("2-way", "Write"))
+def get_val(sz, way, op, kt):
+    return data[sz].get(way, {}).get(op, {}).get(kt, None)
+
+# Print formatted output
+for sz in sizes:
+    label = data[sz]["label"]
+    print(f"Data Size: {label}")
+    for way in [1,2]:
+        for op in ["read","write"]:
+            v1 = get_val(sz, way, op, "copy kernel")
+            v2 = get_val(sz, way, op, "ld_st")
+            v3 = get_val(sz, way, op, "cudaMemcpyPeer")
+            print(f"{way}-way {op.capitalize():5}: "
+                  f"copy kernel {v1:.2f} GB/s   | "
+                  f"ld_st {v2:.2f} GB/s   | "
+                  f"cudaMemcpyPeer {v3:.2f} GB/s")
+    print("-"*80)
+
+# Plot
+for way in [1,2]:
+    for op in ["read","write"]:
+        plt.figure(figsize=(8,5))
+        x = [sz/1024 for sz in sizes]  # KB
+        for kt in ["copy kernel","ld_st","cudaMemcpyPeer"]:
+            y = [get_val(sz, way, op, kt) for sz in sizes]
+            plt.plot(x, y, marker="o", label=kt)
+        plt.xlabel("Data Size (KB)")
+        plt.ylabel("Throughput (GB/s)")
+        plt.title(f"{way}-way {op.capitalize()}")
+        plt.xscale("log")
+        plt.grid(True, which="both", linestyle="--", alpha=0.5)
+        plt.tight_layout()
+        plt.legend()
+        plt.savefig(f"{way}way_{op}.png")
+        plt.close()
+
+print("Done. Check formatted output above and plot files: 1way_read.png ...")
+
+kernel_list = ["copy kernel", "ld_st", "cudaMemcpyPeer"]
+
+for kt in kernel_list:
+    plt.figure(figsize=(8,5))
+    x = [sz/1024 for sz in sizes]  # KB
+    for way in [1,2]:
+        for op in ["read","write"]:
+            y = [get_val(sz, way, op, kt) for sz in sizes]
+            label = f"{way}-way {op}"
+            plt.plot(x, y, marker="o", label=label)
+
+    plt.xlabel("Data Size (KB)")
+    plt.ylabel("Throughput (GB/s)")
+    plt.title(f"{kt}")
+    plt.xscale("log")
+    plt.grid(True, which="both", linestyle="--", alpha=0.5)
+    plt.tight_layout()
+    kt_fname = kt.lower().replace(" ", "_")
+    plt.legend()
+    plt.savefig(f"{kt_fname}.png")
+    plt.close()
+
+print("Additional figures saved: copy_kernel.png, ld_st.png, cudamemcpypeer.png")

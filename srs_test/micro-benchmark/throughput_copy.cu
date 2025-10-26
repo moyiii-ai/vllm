@@ -6,7 +6,6 @@
 
 #define GRID_SIZE 256
 #define BLOCK_SIZE 256
-#define REPEAT 100
 
 __global__ void copyKernel(int* destination, const int* source,
                            size_t numElements) {
@@ -52,14 +51,14 @@ int main(int argc, char* argv[]) {
 
   // data size
   std::vector<size_t> data_sizes = {
-      4ULL * 1024,                // 4 KB
-      32ULL * 1024,               // 32 KB
-      128ULL * 1024,              // 64 KB
-      512ULL * 1024,              // 512 KB
-      1ULL * 1024 * 1024,         // 1 MB
-      100ULL * 1024 * 1024,       // 100 MB
-      1ULL * 1024 * 1024 * 1024,  // 1 GB
-      8ULL * 1024 * 1024 * 1024   // 8 GB
+      // 4ULL * 1024,                // 4 KB
+      // 32ULL * 1024,               // 32 KB
+      // 128ULL * 1024,              // 64 KB
+      // 512ULL * 1024,              // 512 KB
+      // 1ULL * 1024 * 1024,         // 1 MB
+      // 100ULL * 1024 * 1024,       // 100 MB
+      // 1ULL * 1024 * 1024 * 1024,  // 1 GB
+      8ULL * 1024 * 1024 * 1024  // 8 GB
   };
 
   int *d_src0, *d_src1, *d_dst0, *d_dst1;
@@ -106,7 +105,12 @@ int main(int argc, char* argv[]) {
     size_t numElements = DATA_SIZE / sizeof(int);
     double total_time0 = 0.0, total_time1 = 0.0;
 
-    for (int i = 0; i < REPEAT; i++) {
+    int repeat = 100;
+    if (DATA_SIZE < (1ULL << 30)) {  // less than 1GB
+      repeat = 2000;
+    }
+
+    for (int i = 0; i < repeat; i++) {
       if (mode == 1) {
         int dev = base_gpu;
         checkCuda(cudaSetDevice(dev));
@@ -179,15 +183,15 @@ int main(int argc, char* argv[]) {
     }
 
     if (mode == 1) {
-      double avg_time = total_time0 / REPEAT;
+      double avg_time = total_time0 / repeat;
       double throughput = (DATA_SIZE / 1.0e9) / avg_time;
       std::cout << std::fixed << std::setprecision(2)
                 << "DataSize: " << humanReadableSize(DATA_SIZE) << ", "
                 << "1-way, base GPU " << base_gpu << ", Operation: " << op
                 << ", Avg Throughput: " << throughput << " GB/s\n";
     } else {
-      double avg0 = total_time0 / REPEAT;
-      double avg1 = total_time1 / REPEAT;
+      double avg0 = total_time0 / repeat;
+      double avg1 = total_time1 / repeat;
       double throughput0 = (DATA_SIZE / 1.0e9) / avg0;
       double throughput1 = (DATA_SIZE / 1.0e9) / avg1;
       std::cout << std::fixed << std::setprecision(2)

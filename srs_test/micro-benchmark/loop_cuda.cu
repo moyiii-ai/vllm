@@ -8,7 +8,6 @@
 
 volatile bool stop_requested = false;
 
-// Signal handler for Ctrl+C
 void sig_int_handler(int signum) {
   if (signum == SIGINT && !stop_requested) {
     printf("Ctrl+C pressed\nStopping memcpy measurement...\n");
@@ -16,7 +15,6 @@ void sig_int_handler(int signum) {
   }
 }
 
-// CUDA error checking macro
 #define CUDA_CHECK(cmd)                                                \
   do {                                                                 \
     cudaError_t err = cmd;                                             \
@@ -27,23 +25,50 @@ void sig_int_handler(int signum) {
     }                                                                  \
   } while (0)
 
+static inline size_t parse_size(const std::string& s) {
+  size_t n = 0;
+  char unit = '\0';
+
+  if (sscanf(s.c_str(), "%zu%c", &n, &unit) < 1) {
+    std::cerr << "Invalid size format: " << s << std::endl;
+    exit(1);
+  }
+
+  if (unit == 'K' || unit == 'k') return n * 1024ULL;
+  if (unit == 'M' || unit == 'm') return n * 1024ULL * 1024ULL;
+  if (unit == 'G' || unit == 'g') return n * 1024ULL * 1024ULL * 1024ULL;
+
+  return n;
+}
+
 int main(int argc, char* argv[]) {
-  if (argc < 3 || argc > 4) {
-    std::cerr << "Usage: " << argv[0] << " <read|write> <gpu_id> [sync]"
-              << std::endl;
+  if (argc < 3) {
+    std::cerr << "Usage: " << argv[0]
+              << " <read|write> <gpu_id> [sync] [data_size]" << std::endl;
     return 1;
   }
 
   std::string mode(argv[1]);
   int gpu_id = std::stoi(argv[2]);
-  bool synchronized = (argc == 4 && std::string(argv[3]) == "sync");
+
+  bool synchronized = false;
+  size_t TRANSFER_SIZE = 32ULL * 1024ULL;
+
+  if (argc >= 4) {
+    if (std::string(argv[3]) == "sync") {
+      synchronized = true;
+      if (argc == 5) {
+        TRANSFER_SIZE = parse_size(argv[4]);
+      }
+    } else {
+      TRANSFER_SIZE = parse_size(argv[3]);
+    }
+  }
+
   int peer_gpu = (gpu_id == 0) ? 1 : 0;
 
   signal(SIGINT, sig_int_handler);
 
-  constexpr size_t TRANSFER_SIZE = 8ULL * 1024ULL * 1024ULL * 1024ULL;
-
-  // Check peer access and enable if possible
   int can_access = 0;
   CUDA_CHECK(cudaDeviceCanAccessPeer(&can_access, gpu_id, peer_gpu));
   if (!can_access) {
@@ -55,21 +80,17 @@ int main(int argc, char* argv[]) {
   CUDA_CHECK(cudaSetDevice(gpu_id));
   CUDA_CHECK(cudaDeviceEnablePeerAccess(peer_gpu, 0));
 
-  // Allocate memory on self GPU
   uint8_t* d_self = nullptr;
   CUDA_CHECK(cudaMalloc(&d_self, TRANSFER_SIZE));
   CUDA_CHECK(cudaMemset(d_self, 1, TRANSFER_SIZE));
 
-  // Allocate memory on peer GPU
-  CUDA_CHECK(cudaSetDevice(peer_gpu));  // switch to peer GPU
+  CUDA_CHECK(cudaSetDevice(peer_gpu));
   uint8_t* d_peer = nullptr;
   CUDA_CHECK(cudaMalloc(&d_peer, TRANSFER_SIZE));
   CUDA_CHECK(cudaMemset(d_peer, 0, TRANSFER_SIZE));
 
-  // Switch back to current GPU for memcpy
   CUDA_CHECK(cudaSetDevice(gpu_id));
 
-  // Setup synchronization if requested
   sem_t* sem_self = nullptr;
   sem_t* sem_peer = nullptr;
   if (synchronized) {
@@ -84,17 +105,38 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
-    sem_post(sem_self);  // signal self ready
-    sem_wait(sem_peer);  // wait for peer ready
+    sem_post(sem_self);
+    sem_wait(sem_peer);
   }
 
+  auto format_size = [](size_t size) {
+    double d = static_cast<double>(size);
+    const char* unit = "B";
+    if (d >= 1024) {
+      d /= 1024;
+      unit = "KB";
+    }
+    if (d >= 1024) {
+      d /= 1024;
+      unit = "MB";
+    }
+    if (d >= 1024) {
+      d /= 1024;
+      unit = "GB";
+    }
+
+    char buf[64];
+    snprintf(buf, sizeof(buf), "%.2f %s", d, unit);
+    return std::string(buf);
+  };
+
   std::cout << "Start running " << mode << " test on GPU " << gpu_id
+            << " size=" << format_size(TRANSFER_SIZE)
             << " ... Press Ctrl+C to stop." << std::endl;
 
   size_t total_bytes = 0;
   auto start_time = std::chrono::high_resolution_clock::now();
 
-  // Main memcpy loop
   while (!stop_requested) {
     if (mode == "read") {
       CUDA_CHECK(
@@ -108,6 +150,8 @@ int main(int argc, char* argv[]) {
     }
     total_bytes += TRANSFER_SIZE;
   }
+
+  CUDA_CHECK(cudaDeviceSynchronize());
 
   auto end_time = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed_s = end_time - start_time;

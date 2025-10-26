@@ -1,24 +1,43 @@
 #!/bin/bash
-# Usage: ./run_loop.sh <1|2> <read|write>
+# Usage: ./run_loop.sh [-s <data_size>] <cuda|global|copy> <1|2> <read|write>
+
+DATA_SIZE=""
+POSITIONAL=()
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -s)
+            DATA_SIZE=$2
+            shift 2
+            ;;
+        *)
+            POSITIONAL+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Restore positional parameters
+set -- "${POSITIONAL[@]}"
 
 if [ $# -ne 3 ]; then
-    echo "Usage: $0 <cuda|global|copy> <1|2> <read|write>"
+    echo "Usage: $0 [-s <data_size>] <cuda|global|copy> <1|2> <read|write>"
     exit 1
 fi
 
-IMPL=$1      # Implementation: cuda or global or copy
-MODE=$2      # 1 or 2
-OP=$3        # read or write
+IMPL=$1
+MODE=$2
+OP=$3
 
 if [ "$IMPL" = "cuda" ]; then
     SRC_FILE="loop_cuda.cu"
-    BIN_FILE="gpu_peer_loop_cuda"
+    BIN_FILE="gpu_peer_loop"
 elif [ "$IMPL" = "global" ]; then
     SRC_FILE="loop_global.cu"
-    BIN_FILE="gpu_peer_loop_global"
+    BIN_FILE="gpu_peer_loop"
 elif [ "$IMPL" = "copy" ]; then 
     SRC_FILE="loop_copy.cu"
-    BIN_FILE="gpu_peer_loop_copy"
+    BIN_FILE="gpu_peer_loop"
 else
     echo "Invalid implementation: $IMPL. Must be cuda, global, or copy."
     exit 1
@@ -31,7 +50,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Array to store PIDs
 PIDS=()
 
 CLEANED_UP=0
@@ -42,7 +60,6 @@ cleanup() {
     CLEANED_UP=1
 
     echo "Waiting for child processes to finish..."
-    # Just wait — don't send SIGINT again
     wait "${PIDS[@]}" 2>/dev/null
 
     cat gpu0.log
@@ -56,20 +73,27 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM SIGQUIT SIGHUP EXIT
 
+RUN_CMD="./$BIN_FILE $OP"
+
 if [ "$MODE" -eq 1 ]; then
     echo "Starting single process on GPU 0 ($OP mode)..."
-    ./gpu_peer_loop "$OP" 0 2>gpu0.log &
+    if [ -n "$DATA_SIZE" ]; then
+        $RUN_CMD 0 "$DATA_SIZE" 2>gpu0.log &
+    else
+        $RUN_CMD 0 2>gpu0.log &
+    fi
     PIDS+=($!)
 elif [ "$MODE" -eq 2 ]; then
     echo "Starting synchronized dual processes ($OP mode)..."
-    ./gpu_peer_loop "$OP" 0 sync 2>gpu0.log &
+    if [ -n "$DATA_SIZE" ]; then
+        $RUN_CMD 0 sync "$DATA_SIZE" 2>gpu0.log &
+        $RUN_CMD 1 sync "$DATA_SIZE" 2>gpu1.log &
+    else
+        $RUN_CMD 0 sync 2>gpu0.log &
+        $RUN_CMD 1 sync 2>gpu1.log &
+    fi
     PIDS+=($!)
-    ./gpu_peer_loop "$OP" 1 sync 2>gpu1.log &
     PIDS+=($!)
-else
-    echo "Invalid mode: $MODE. Must be 1 or 2."
-    exit 1
 fi
 
-# Wait for all child processes
 wait "${PIDS[@]}"
