@@ -20,27 +20,27 @@ SSH_PATH="$HOME/.ssh"
 # Run containers with default bridge (eth0)
 docker run -dit \
   --name $CTN0_NAME \
-  --cpuset-mems=1 \
-  --cpuset-cpus=16-31 \
-  --gpus '"device=1,2"' \
+  --cpuset-mems=0 \
+  --cpuset-cpus=0-15 \
   --cap-add=NET_ADMIN \
   --cap-add=IPC_LOCK \
   --device=/dev/infiniband/uverbs0 \
   --device=/dev/infiniband/rdma_cm \
-  -v $VLLM_PATH:/vllm-workspace/vllm \
-  -v $SSH_PATH:/root/.ssh \
   -w $WORKDIR \
   --entrypoint sleep \
   $IMAGE infinity
 
 docker run -dit \
   --name $CTN1_NAME \
-  --cpuset-mems=0 \
-  --cpuset-cpus=0-15 \
+  --cpuset-mems=1 \
+  --cpuset-cpus=16-31 \
+  --gpus '"device=1,2"' \
   --cap-add=NET_ADMIN \
   --cap-add=IPC_LOCK \
   --device=/dev/infiniband/uverbs5 \
   --device=/dev/infiniband/rdma_cm \
+  -v $VLLM_PATH:/vllm-workspace/vllm \
+  -v $SSH_PATH:/root/.ssh \
   -w $WORKDIR \
   --entrypoint sleep \
   $IMAGE infinity

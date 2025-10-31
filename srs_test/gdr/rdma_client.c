@@ -7,6 +7,8 @@
 #include <arpa/inet.h>
 #include <signal.h>
 
+static const size_t DATA_SIZE = 128ULL * 1024ULL * 1024ULL;
+
 static struct rdma_event_channel *cm_event_channel = NULL;
 static struct rdma_cm_id *cm_client_id = NULL;
 static struct ibv_pd *pd = NULL;
@@ -131,7 +133,7 @@ static int client_xchange_metadata_with_server()
     struct ibv_wc wc[2];
     int ret = -1;
 
-    client_src_mr = rdma_buffer_register(pd, src, 4 * 1024 * 1024,
+    client_src_mr = rdma_buffer_register(pd, src, DATA_SIZE,
                                         IBV_ACCESS_LOCAL_WRITE |
                                         IBV_ACCESS_REMOTE_READ |
                                         IBV_ACCESS_REMOTE_WRITE);
@@ -171,7 +173,7 @@ static int client_remote_memory_ops()
 {
     struct ibv_wc wc;
     int ret = -1;
-    size_t write_size = 4 * 1024 * 1024;
+    size_t write_size = DATA_SIZE;
     size_t total_bytes = 0;
 
     struct timespec start_time, end_time;
@@ -205,7 +207,7 @@ static int client_remote_memory_ops()
                          (end_time.tv_nsec - start_time.tv_nsec) / 1e9;
 
     double throughput_gb_s = (double)total_bytes / (1024.0 * 1024.0 * 1024.0) / elapsed_sec;
-    printf("Client side 4MB WRITE loop ended\n");
+    printf("Client side %zuB WRITE loop ended\n", write_size);
     printf("Total data written: %.2f MB\n", (double)total_bytes / (1024.0 * 1024.0));
     printf("Elapsed time: %.2f s\n", elapsed_sec);
     printf("Average throughput: %.2f GB/s\n", throughput_gb_s);
@@ -248,7 +250,7 @@ int main(int argc, char **argv)
     server_sockaddr.sin_family = AF_INET;
     server_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
-    src = calloc(4 * 1024 * 1024, 1);
+    src = calloc(DATA_SIZE, 1);
     if (!src) return -ENOMEM;
 
     while ((option = getopt(argc, argv, "a:p:")) != -1) {

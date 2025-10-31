@@ -3,16 +3,22 @@
  * Author: Animesh Trivedi 
  *         atrivedi@apache.org 
  * Modified to use GPU memory instead of CPU memory for RDMA operations
+ * Added support for device ID parameter and dynamic port binding
  */
 
 #include "rdma_common.h"
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <poll.h>
+#include <getopt.h>
 
 /* RDMA resources for GPU Direct */
 static struct ibv_mr *gpu_buffer_mr = NULL;  // MR for GPU memory
 static void *gpu_buffer = NULL;              // GPU memory buffer
+static int gpu_device_id = 0;                // GPU device ID (default: 0)
+static const uint16_t DEFAULT_PORT_0 = 20886;// Port for device 0
+static const uint16_t DEFAULT_PORT_1 = 20887;// Port for device 1
+static const size_t BUFFER_SIZE = 128ULL * 1024ULL * 1024ULL; // 128MB buffer
 
 /* These are the RDMA resources needed to setup an RDMA connection */
 static struct rdma_event_channel *cm_event_channel = NULL;
@@ -27,6 +33,33 @@ static struct rdma_buffer_attr client_metadata_attr, server_metadata_attr;
 static struct ibv_recv_wr client_recv_wr, *bad_client_recv_wr = NULL;
 static struct ibv_send_wr server_send_wr, *bad_server_send_wr = NULL;
 static struct ibv_sge client_recv_sge, server_send_sge;
+
+/* Parse command line arguments to get GPU device ID */
+static int parse_args(int argc, char **argv) {
+    int opt;
+    while ((opt = getopt(argc, argv, "d:")) != -1) {
+        switch (opt) {
+            case 'd':
+                gpu_device_id = atoi(optarg);
+                // Validate device ID (support 0 and 1 only)
+                if (gpu_device_id != 0 && gpu_device_id != 1) {
+                    fprintf(stderr, "Error: Device ID must be 0 or 1\n");
+                    return -1;
+                }
+                break;
+            default:
+                fprintf(stderr, "Usage: %s [-d <device_id>]\n", argv[0]);
+                fprintf(stderr, "  -d: GPU device ID (0 or 1, default: 0)\n");
+                return -1;
+        }
+    }
+    return 0;
+}
+
+/* Get port based on GPU device ID */
+static uint16_t get_port_by_device_id() {
+    return (gpu_device_id == 0) ? DEFAULT_PORT_0 : DEFAULT_PORT_1;
+}
 
 /* Setup client resources (PD, CQ, QP) */
 static int setup_client_resources()
@@ -84,28 +117,29 @@ static int setup_client_resources()
 }
 
 /* Initialize GPU buffer and register for RDMA access */
-static int setup_gpu_buffer(size_t buffer_size)
+static int setup_gpu_buffer()
 {
     cudaError_t cuda_ret;
 
-    // Allocate GPU memory (replaces CPU memory allocation)
-    int device_id = 1;
-    cudaError_t err;
-    err = cudaSetDevice(device_id);
+    // Set and check GPU device
+    cudaError_t err = cudaSetDevice(gpu_device_id);
     if (err != cudaSuccess) {
-        fprintf(stderr, "cudaSetDevice(%d) failed: %s\n", device_id, cudaGetErrorString(err));
+        fprintf(stderr, "cudaSetDevice(%d) failed: %s\n", gpu_device_id, cudaGetErrorString(err));
         return -1;
     }
-    cuda_ret = cudaMalloc(&gpu_buffer, buffer_size);
+    printf("Using GPU device %d\n", gpu_device_id);
+
+    // Allocate GPU memory
+    cuda_ret = cudaMalloc(&gpu_buffer, BUFFER_SIZE);
     if (cuda_ret != cudaSuccess) {
         rdma_error("cudaMalloc failed: %s\n", cudaGetErrorString(cuda_ret));
         return -1;
     }
-    printf("GPU buffer address: %p\n", gpu_buffer);
-    debug("Allocated GPU buffer at %p (size: %zu)\n", gpu_buffer, buffer_size);
+    printf("GPU buffer address: %p (size: %zu MB)\n", gpu_buffer, BUFFER_SIZE / (1024 * 1024));
+    debug("Allocated GPU buffer at %p (size: %zu)\n", gpu_buffer, BUFFER_SIZE);
 
-    // Register GPU memory with RDMA (includes remote access permissions)
-    gpu_buffer_mr = ibv_reg_mr(pd, gpu_buffer, buffer_size,
+    // Register GPU memory with RDMA
+    gpu_buffer_mr = ibv_reg_mr(pd, gpu_buffer, BUFFER_SIZE,
         IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ);
     if (!gpu_buffer_mr) {
         rdma_error("ibv_reg_mr for GPU buffer failed: %d\n", -errno);
@@ -150,8 +184,8 @@ static int start_rdma_server(struct sockaddr_in *server_addr)
         rdma_error("rdma_listen failed to listen on server address, errno: %d ", -errno);
         return -errno;
     }
-    printf("Server is listening successfully at: %s , port: %d \n",
-        inet_ntoa(server_addr->sin_addr), ntohs(server_addr->sin_port));
+    printf("Server (GPU %d) is listening successfully at: %s , port: %d \n",
+        gpu_device_id, inet_ntoa(server_addr->sin_addr), ntohs(server_addr->sin_port));
 
     ret = process_rdma_cm_event(cm_event_channel, RDMA_CM_EVENT_CONNECT_REQUEST, &cm_event);
     if (ret) {
@@ -176,15 +210,14 @@ static int accept_client_connection()
     struct rdma_cm_event *cm_event = NULL;
     struct ibv_wc wc;
     int ret = -1;
-    const size_t BUFFER_SIZE = 4ULL * 1024ULL * 1024ULL;
 
     if(!cm_client_id || !client_qp) {
         rdma_error("Client resources are not properly setup\n");
         return -EINVAL;
     }
 
-    // Setup GPU buffer for RDMA operations (replaces CPU buffer)
-    if (setup_gpu_buffer(BUFFER_SIZE) != 0) {
+    // Setup GPU buffer for RDMA operations
+    if (setup_gpu_buffer() != 0) {
         rdma_error("Failed to setup GPU buffer\n");
         return -1;
     }
@@ -242,12 +275,12 @@ static int accept_client_connection()
     }
     debug("Received client metadata \n");
 
-    // Prepare server metadata with GPU buffer info (uses GPU bus address)
-    server_metadata_attr.address = (uint64_t)gpu_buffer;  // GPU buffer address
+    // Prepare server metadata with GPU buffer info
+    server_metadata_attr.address = (uint64_t)gpu_buffer;
     server_metadata_attr.length = gpu_buffer_mr->length;
     server_metadata_attr.stag.local_stag = gpu_buffer_mr->lkey;
 
-    // Send server metadata (GPU buffer info) to client
+    // Send server metadata to client
     server_metadata_mr = rdma_buffer_register(pd, &server_metadata_attr,
         sizeof(server_metadata_attr), IBV_ACCESS_LOCAL_WRITE);
     if (!server_metadata_mr) {
@@ -287,11 +320,11 @@ static void cleanup_resources()
 {
     // Cleanup GPU resources first
     if (gpu_buffer_mr) {
-        ibv_dereg_mr(gpu_buffer_mr);  // Deregister RDMA MR
+        ibv_dereg_mr(gpu_buffer_mr);
         gpu_buffer_mr = NULL;
     }
     if (gpu_buffer) {
-        cudaFree(gpu_buffer);  // Free GPU memory
+        cudaFree(gpu_buffer);
         gpu_buffer = NULL;
     }
 
@@ -362,8 +395,7 @@ static void process_client_operations()
             } else {
                 rdma_ack_cm_event(cm_event);
                 printf("Client disconnected\n");
-            }
-            break;
+            }            break;
         }
 
         if (fds[1].revents & POLLIN) {
@@ -383,32 +415,22 @@ static void process_client_operations()
     }
 }
 
-// static void process_client_operations() {
-//     struct ibv_wc wc;
-//     int ret;
-
-//     while (1) {
-//         ret = process_work_completion_events(io_completion_channel, &wc, 1);
-//         if (ret <= 0) break;
-
-//         if (wc.opcode == IBV_WC_RDMA_WRITE || wc.opcode == IBV_WC_RDMA_READ) {
-//             continue;
-//         }
-
-//         ret = ibv_post_recv(client_qp, &client_recv_wr, &bad_client_recv_wr);
-//         if (ret) break;
-//     }
-// }
-
 int main(int argc, char **argv)
 {
     struct sockaddr_in server_addr;
     int ret = 0;
 
+    // Parse command line arguments
+    ret = parse_args(argc, argv);
+    if (ret != 0) {
+        return ret;
+    }
+
+    // Initialize server address with dynamic port
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(DEFAULT_RDMA_PORT);
+    server_addr.sin_port = htons(get_port_by_device_id());
 
     // Initialize RDMA server
     ret = start_rdma_server(&server_addr);
@@ -436,18 +458,8 @@ int main(int argc, char **argv)
 
     process_client_operations();
 
-    // Wait for client disconnect
-    // struct rdma_cm_event *cm_event = NULL;
-    // ret = process_rdma_cm_event(cm_event_channel, RDMA_CM_EVENT_DISCONNECTED, &cm_event);
-    // if (ret) {
-    //     rdma_error("Failed to get disconnect event, ret = %d\n", ret);
-    // } else {
-    //     rdma_ack_cm_event(cm_event);
-    //     printf("Client disconnected\n");
-    // }
-
     // Cleanup
     cleanup_resources();
-    printf("Server cleanup complete\n");
+    printf("Server (GPU %d) cleanup complete\n", gpu_device_id);
     return ret;
 }
