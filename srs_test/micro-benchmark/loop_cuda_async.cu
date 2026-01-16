@@ -85,12 +85,14 @@ int main(int argc, char* argv[]) {
   CUDA_CHECK(cudaMemset(d_self, 1, TRANSFER_SIZE));
 
   CUDA_CHECK(cudaSetDevice(peer_gpu));
-  CUDA_CHECK(cudaDeviceEnablePeerAccess(gpu_id, 0));
   uint8_t* d_peer = nullptr;
   CUDA_CHECK(cudaMalloc(&d_peer, TRANSFER_SIZE));
   CUDA_CHECK(cudaMemset(d_peer, 0, TRANSFER_SIZE));
 
   CUDA_CHECK(cudaSetDevice(gpu_id));
+
+  cudaStream_t stream;
+  CUDA_CHECK(cudaStreamCreate(&stream));
 
   sem_t* sem_self = nullptr;
   sem_t* sem_peer = nullptr;
@@ -140,11 +142,11 @@ int main(int argc, char* argv[]) {
 
   while (!stop_requested) {
     if (mode == "read") {
-      CUDA_CHECK(
-          cudaMemcpyPeer(d_self, gpu_id, d_peer, peer_gpu, TRANSFER_SIZE));
+      CUDA_CHECK(cudaMemcpyPeerAsync(d_self, gpu_id, d_peer, peer_gpu,
+                                     TRANSFER_SIZE, stream));
     } else if (mode == "write") {
-      CUDA_CHECK(
-          cudaMemcpyPeer(d_peer, peer_gpu, d_self, gpu_id, TRANSFER_SIZE));
+      CUDA_CHECK(cudaMemcpyPeerAsync(d_peer, peer_gpu, d_self, gpu_id,
+                                     TRANSFER_SIZE, stream));
     } else {
       std::cerr << "Invalid mode: " << mode << std::endl;
       break;
@@ -152,28 +154,7 @@ int main(int argc, char* argv[]) {
     total_bytes += TRANSFER_SIZE;
   }
 
-  // for (int i = 0; i < 20000 && !stop_requested; ++i) {
-  //   cudaEvent_t start, stop;
-  //   CUDA_CHECK(cudaSetDevice(gpu_id));
-  //   CUDA_CHECK(cudaEventCreate(&start));
-  //   CUDA_CHECK(cudaEventCreate(&stop));
-
-  //   CUDA_CHECK(cudaEventRecord(start));
-
-  //   // Async memcpy
-  //   CUDA_CHECK(cudaMemcpyPeerAsync(d_self, gpu_id, d_peer, peer_gpu,
-  //                                  TRANSFER_SIZE, 0));
-
-  //   CUDA_CHECK(cudaEventRecord(stop));
-  //   CUDA_CHECK(cudaEventSynchronize(stop));  // wait for this memcpy to
-  //   complete
-
-  //   total_bytes += TRANSFER_SIZE;
-
-  //   CUDA_CHECK(cudaEventDestroy(start));
-  //   CUDA_CHECK(cudaEventDestroy(stop));
-  // }
-
+  CUDA_CHECK(cudaStreamSynchronize(stream));
   CUDA_CHECK(cudaDeviceSynchronize());
 
   auto end_time = std::chrono::high_resolution_clock::now();
@@ -184,6 +165,7 @@ int main(int argc, char* argv[]) {
   std::cerr << "Transferred " << gb << " GB in " << elapsed_s.count()
             << " s. Throughput: " << throughput << " GB/s" << std::flush;
 
+  CUDA_CHECK(cudaStreamDestroy(stream));
   CUDA_CHECK(cudaFree(d_self));
   CUDA_CHECK(cudaFree(d_peer));
 

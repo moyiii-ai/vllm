@@ -41,7 +41,7 @@ for fname, dist in zip(files, distances):
 
 color_map = {
     "copy kernel": {"Read": "#6baed6", "Write": "#08519c"},
-    "ld_st": {"Read": "#74c476", "Write": "#006d2c"},
+    # "ld_st": {"Read": "#74c476", "Write": "#006d2c"},
     "cudaMemcpyPeerAsync": {"Read": "#fb6a4a", "Write": "#a50f15"}
 }
 way_styles = {
@@ -60,7 +60,7 @@ def size_key(x):
 
 for data_size in sorted(set(k[0] for k in data.keys()), key=size_key):
     fig, ax = plt.subplots(figsize=(10,6))
-    for method in ["copy kernel", "ld_st", "cudaMemcpyPeerAsync"]:
+    for method in ["copy kernel", "cudaMemcpyPeerAsync"]:
         for direction in ["Read", "Write"]:
             for way in ["1-way", "2-way"]:
                 key = (data_size, method, direction, way)
@@ -78,8 +78,8 @@ for data_size in sorted(set(k[0] for k in data.keys()), key=size_key):
     legend1_elements = [
         Line2D([0], [0], color=color_map["copy kernel"]["Read"], lw=2, label="copy kernel Read"),
         Line2D([0], [0], color=color_map["copy kernel"]["Write"], lw=2, label="copy kernel Write"),
-        Line2D([0], [0], color=color_map["ld_st"]["Read"], lw=2, label="ld_st Read"),
-        Line2D([0], [0], color=color_map["ld_st"]["Write"], lw=2, label="ld_st Write"),
+        # Line2D([0], [0], color=color_map["ld_st"]["Read"], lw=2, label="ld_st Read"),
+        # Line2D([0], [0], color=color_map["ld_st"]["Write"], lw=2, label="ld_st Write"),
         Line2D([0], [0], color=color_map["cudaMemcpyPeerAsync"]["Read"], lw=2, label="cudaMemcpy Read"),
         Line2D([0], [0], color=color_map["cudaMemcpyPeerAsync"]["Write"], lw=2, label="cudaMemcpy Write"),
     ]
@@ -99,4 +99,5 @@ for data_size in sorted(set(k[0] for k in data.keys()), key=size_key):
     plt.tight_layout()
     plt.subplots_adjust(right=0.75)
     plt.savefig(f"{data_size}.png")
+    plt.savefig(f"{data_size}.pdf")
     plt.close()

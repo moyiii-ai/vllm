@@ -31,6 +31,7 @@ OP=$3
 
 if [ "$IMPL" = "cuda" ]; then
     SRC_FILE="loop_cuda.cu"
+    #SRC_FILE="loop_cuda_async.cu"
     BIN_FILE="gpu_peer_loop"
 elif [ "$IMPL" = "global" ]; then
     SRC_FILE="loop_global.cu"
@@ -44,7 +45,7 @@ else
 fi
 
 echo "Compiling $SRC_FILE..."
-nvcc -arch=sm_80 -O2 "$SRC_FILE" -o "$BIN_FILE"
+nvcc -arch=sm_89 "$SRC_FILE" -o "$BIN_FILE"
 if [ $? -ne 0 ]; then
     echo "Compilation failed!"
     exit 1

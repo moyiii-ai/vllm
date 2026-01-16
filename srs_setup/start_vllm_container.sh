@@ -7,11 +7,11 @@ VLLM_PATH="$(dirname "$SCRIPT_DIR")"
 SSH_PATH="$HOME/.ssh"
 
 SHM_SIZE="48g"
-CPUSET_CPUS="16-31"
-CPUSET_MEMS="1"
+CPUSET_CPUS="0-15"
+CPUSET_MEMS="0"
 
 docker run -d \
-    --gpus '"device=1,2"' \
+    --gpus '"device=0,1"' \
     --cap-add=SYS_ADMIN \
     --security-opt seccomp=unconfined \
     --shm-size=$SHM_SIZE \

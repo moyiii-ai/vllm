@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <cstdio>
+#include <chrono>
 
 #define GRID_SIZE 256
 #define BLOCK_SIZE 256
@@ -45,14 +46,7 @@ int main(int argc, char* argv[]) {
 
   // Fixed data sizes (bytes)
   std::vector<size_t> data_sizes = {
-      // 4ULL * 1024ULL,                      // 4 KB
-      // 32ULL * 1024ULL,                     // 32 KB
-      // 128ULL * 1024ULL,                    // 128 KB
-      // 512ULL * 1024ULL,                    // 512 KB
-      // 1ULL * 1024ULL * 1024ULL  // 1 MB
-      // 100ULL * 1024ULL * 1024ULL,          // 100 MB
-      1ULL * 1024ULL * 1024ULL * 1024ULL  // 1 GB
-      // 8ULL * 1024ULL * 1024ULL * 1024ULL  // 8 GB
+      1ULL * 1024ULL * 1024ULL  // 1 MB
   };
 
   size_t max_size = data_sizes.back();
@@ -102,92 +96,45 @@ int main(int argc, char* argv[]) {
       if (mode == 1) {
         // One-way
         int dst_gpu = (base_gpu == 0) ? 1 : 0;
-        cudaEvent_t start, stop;
-        checkCuda(cudaSetDevice(base_gpu));
-        checkCuda(cudaEventCreate(&start));
-        checkCuda(cudaEventCreate(&stop));
-        checkCuda(cudaEventRecord(start));
+        auto start = std::chrono::high_resolution_clock::now();
 
         if (op == "read") {
-          // read: copy from peer to local GPU
-          checkCuda(cudaMemcpyPeerAsync(
-              (base_gpu == 0) ? d_dst0 : d_dst1, base_gpu,
-              (base_gpu == 0) ? d_src1 : d_src0, dst_gpu, DATA_SIZE, 0));
+          checkCuda(cudaMemcpyPeer((base_gpu == 0) ? d_dst0 : d_dst1, base_gpu,
+                                   (base_gpu == 0) ? d_src1 : d_src0, dst_gpu,
+                                   DATA_SIZE));
         } else {
-          // write: copy from local GPU to peer
-          checkCuda(cudaMemcpyPeerAsync(
-              (base_gpu == 0) ? d_dst1 : d_dst0, dst_gpu,
-              (base_gpu == 0) ? d_src0 : d_src1, base_gpu, DATA_SIZE, 0));
+          checkCuda(cudaMemcpyPeer((base_gpu == 0) ? d_dst1 : d_dst0, dst_gpu,
+                                   (base_gpu == 0) ? d_src0 : d_src1, base_gpu,
+                                   DATA_SIZE));
         }
 
-        checkCuda(cudaEventRecord(stop));
-        checkCuda(cudaEventSynchronize(stop));
-        float ms = 0.0f;
-        checkCuda(cudaEventElapsedTime(&ms, start, stop));
+        auto end = std::chrono::high_resolution_clock::now();
+        double elapsed = std::chrono::duration<double>(end - start).count();
         if (base_gpu == 0)
-          total_time0 += ms / 1000.0;
+          total_time0 += elapsed;
         else
-          total_time1 += ms / 1000.0;
-
-        cudaEventDestroy(start);
-        cudaEventDestroy(stop);
+          total_time1 += elapsed;
 
       } else {
         // Two-way
-        cudaStream_t stream0, stream1;
-        cudaEvent_t start0, stop0, start1, stop1;
-
+        auto start0 = std::chrono::high_resolution_clock::now();
         checkCuda(cudaSetDevice(0));
-        checkCuda(cudaStreamCreate(&stream0));
-        checkCuda(cudaEventCreate(&start0));
-        checkCuda(cudaEventCreate(&stop0));
-
-        checkCuda(cudaSetDevice(1));
-        checkCuda(cudaStreamCreate(&stream1));
-        checkCuda(cudaEventCreate(&start1));
-        checkCuda(cudaEventCreate(&stop1));
-
-        // Launch peer memcpy according to operation
-        checkCuda(cudaSetDevice(0));
-        checkCuda(cudaEventRecord(start0, stream0));
         if (op == "read")
-          checkCuda(
-              cudaMemcpyPeerAsync(d_dst0, 0, d_src1, 1, DATA_SIZE, stream0));
+          checkCuda(cudaMemcpyPeer(d_dst0, 0, d_src1, 1, DATA_SIZE));
         else
-          checkCuda(
-              cudaMemcpyPeerAsync(d_dst1, 1, d_src0, 0, DATA_SIZE, stream0));
-        checkCuda(cudaEventRecord(stop0, stream0));
+          checkCuda(cudaMemcpyPeer(d_dst1, 1, d_src0, 0, DATA_SIZE));
+        auto end0 = std::chrono::high_resolution_clock::now();
 
+        auto start1 = std::chrono::high_resolution_clock::now();
         checkCuda(cudaSetDevice(1));
-        checkCuda(cudaEventRecord(start1, stream1));
         if (op == "read")
-          checkCuda(
-              cudaMemcpyPeerAsync(d_dst1, 1, d_src0, 0, DATA_SIZE, stream1));
+          checkCuda(cudaMemcpyPeer(d_dst1, 1, d_src0, 0, DATA_SIZE));
         else
-          checkCuda(
-              cudaMemcpyPeerAsync(d_dst0, 0, d_src1, 1, DATA_SIZE, stream1));
-        checkCuda(cudaEventRecord(stop1, stream1));
+          checkCuda(cudaMemcpyPeer(d_dst0, 0, d_src1, 1, DATA_SIZE));
+        auto end1 = std::chrono::high_resolution_clock::now();
 
-        checkCuda(cudaSetDevice(0));
-        checkCuda(cudaEventSynchronize(stop0));
-        checkCuda(cudaSetDevice(1));
-        checkCuda(cudaEventSynchronize(stop1));
-
-        float ms0 = 0.0f, ms1 = 0.0f;
-        checkCuda(cudaEventElapsedTime(&ms0, start0, stop0));
-        checkCuda(cudaEventElapsedTime(&ms1, start1, stop1));
-        total_time0 += ms0 / 1000.0;
-        total_time1 += ms1 / 1000.0;
-
-        // Cleanup
-        checkCuda(cudaSetDevice(0));
-        cudaEventDestroy(start0);
-        cudaEventDestroy(stop0);
-        cudaStreamDestroy(stream0);
-        checkCuda(cudaSetDevice(1));
-        cudaEventDestroy(start1);
-        cudaEventDestroy(stop1);
-        cudaStreamDestroy(stream1);
+        total_time0 += std::chrono::duration<double>(end0 - start0).count();
+        total_time1 += std::chrono::duration<double>(end1 - start1).count();
       }
     }
 

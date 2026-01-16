@@ -56,7 +56,7 @@ fi
 
 # Compile the CUDA program
 echo "Compiling $SOURCE_FILE..."
-nvcc -arch=sm_80 -o "$EXECUTABLE" "$SOURCE_FILE"
+nvcc -arch=sm_89 -o "$EXECUTABLE" "$SOURCE_FILE"
 if [ $? -ne 0 ]; then
     echo "Compilation failed."
     exit 1

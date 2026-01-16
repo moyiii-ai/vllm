@@ -86,6 +86,7 @@ for way in [1,2]:
         plt.tight_layout()
         plt.legend()
         plt.savefig(f"{way}way_{op}.png")
+        plt.savefig(f"{way}way_{op}.pdf")
         plt.close()
 
 print("Done. Check formatted output above and plot files: 1way_read.png ...")
@@ -110,6 +111,7 @@ for kt in kernel_list:
     kt_fname = kt.lower().replace(" ", "_")
     plt.legend()
     plt.savefig(f"{kt_fname}.png")
+    plt.savefig(f"{kt_fname}.pdf")
     plt.close()
 
 print("Additional figures saved: copy_kernel.png, ld_st.png, cudamemcpypeer.png")
