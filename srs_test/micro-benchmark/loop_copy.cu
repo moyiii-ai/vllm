@@ -116,6 +116,7 @@ int main(int argc, char* argv[]) {
   CUDA_CHECK(cudaMemset(d_self, 1, TRANSFER_SIZE));
 
   CUDA_CHECK(cudaSetDevice(peer_gpu));
+  CUDA_CHECK(cudaDeviceEnablePeerAccess(gpu_id, 0));
   int* d_peer = nullptr;
   CUDA_CHECK(cudaMalloc(&d_peer, TRANSFER_SIZE));
   CUDA_CHECK(cudaMemset(d_peer, 0, TRANSFER_SIZE));
