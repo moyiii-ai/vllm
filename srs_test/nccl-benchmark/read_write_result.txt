@@ -1,0 +1,48 @@
+Data Size: 4KB
+1-way Read : copy kernel 1.04 GB/s   | ld_st 0.76 GB/s   | cudaMemcpyPeer 0.86 GB/s
+1-way Write: copy kernel 1.35 GB/s   | ld_st 0.80 GB/s   | cudaMemcpyPeer 0.87 GB/s
+2-way Read : copy kernel 1.02 GB/s   | ld_st 0.75 GB/s   | cudaMemcpyPeer 0.86 GB/s
+2-way Write: copy kernel 1.35 GB/s   | ld_st 0.87 GB/s   | cudaMemcpyPeer 0.86 GB/s
+--------------------------------------------------------------------------------
+Data Size: 32KB
+1-way Read : copy kernel 6.35 GB/s   | ld_st 5.12 GB/s   | cudaMemcpyPeer 5.48 GB/s
+1-way Write: copy kernel 8.22 GB/s   | ld_st 5.14 GB/s   | cudaMemcpyPeer 5.47 GB/s
+2-way Read : copy kernel 6.32 GB/s   | ld_st 4.88 GB/s   | cudaMemcpyPeer 5.42 GB/s
+2-way Write: copy kernel 8.16 GB/s   | ld_st 5.19 GB/s   | cudaMemcpyPeer 5.43 GB/s
+--------------------------------------------------------------------------------
+Data Size: 128KB
+1-way Read : copy kernel 14.38 GB/s   | ld_st 12.56 GB/s   | cudaMemcpyPeer 12.55 GB/s
+1-way Write: copy kernel 15.50 GB/s   | ld_st 12.27 GB/s   | cudaMemcpyPeer 12.58 GB/s
+2-way Read : copy kernel 13.06 GB/s   | ld_st 11.52 GB/s   | cudaMemcpyPeer 12.46 GB/s
+2-way Write: copy kernel 15.23 GB/s   | ld_st 12.24 GB/s   | cudaMemcpyPeer 12.41 GB/s
+--------------------------------------------------------------------------------
+Data Size: 512KB
+1-way Read : copy kernel 21.10 GB/s   | ld_st 19.98 GB/s   | cudaMemcpyPeer 19.64 GB/s
+1-way Write: copy kernel 19.53 GB/s   | ld_st 18.00 GB/s   | cudaMemcpyPeer 19.65 GB/s
+2-way Read : copy kernel 18.00 GB/s   | ld_st 17.18 GB/s   | cudaMemcpyPeer 19.44 GB/s
+2-way Write: copy kernel 19.35 GB/s   | ld_st 17.93 GB/s   | cudaMemcpyPeer 19.45 GB/s
+--------------------------------------------------------------------------------
+Data Size: 1MB
+1-way Read : copy kernel 22.86 GB/s   | ld_st 22.17 GB/s   | cudaMemcpyPeer 21.83 GB/s
+1-way Write: copy kernel 20.45 GB/s   | ld_st 19.35 GB/s   | cudaMemcpyPeer 21.83 GB/s
+2-way Read : copy kernel 19.23 GB/s   | ld_st 18.75 GB/s   | cudaMemcpyPeer 21.58 GB/s
+2-way Write: copy kernel 20.24 GB/s   | ld_st 19.15 GB/s   | cudaMemcpyPeer 21.60 GB/s
+--------------------------------------------------------------------------------
+Data Size: 128MB
+1-way Read : copy kernel 24.96 GB/s   | ld_st 24.96 GB/s   | cudaMemcpyPeer 24.57 GB/s
+1-way Write: copy kernel 20.69 GB/s   | ld_st 20.64 GB/s   | cudaMemcpyPeer 24.57 GB/s
+2-way Read : copy kernel 20.53 GB/s   | ld_st 20.52 GB/s   | cudaMemcpyPeer 24.29 GB/s
+2-way Write: copy kernel 20.45 GB/s   | ld_st 20.50 GB/s   | cudaMemcpyPeer 24.29 GB/s
+--------------------------------------------------------------------------------
+Data Size: 1GB
+1-way Read : copy kernel 24.98 GB/s   | ld_st 24.98 GB/s   | cudaMemcpyPeer 24.59 GB/s
+1-way Write: copy kernel 20.63 GB/s   | ld_st 20.63 GB/s   | cudaMemcpyPeer 24.59 GB/s
+2-way Read : copy kernel 20.53 GB/s   | ld_st 20.53 GB/s   | cudaMemcpyPeer 24.31 GB/s
+2-way Write: copy kernel 20.46 GB/s   | ld_st 20.49 GB/s   | cudaMemcpyPeer 24.32 GB/s
+--------------------------------------------------------------------------------
+Data Size: 8GB
+1-way Read : copy kernel 24.94 GB/s   | ld_st 24.96 GB/s   | cudaMemcpyPeer 24.55 GB/s
+1-way Write: copy kernel 20.60 GB/s   | ld_st 20.61 GB/s   | cudaMemcpyPeer 24.55 GB/s
+2-way Read : copy kernel 20.50 GB/s   | ld_st 20.50 GB/s   | cudaMemcpyPeer 24.28 GB/s
+2-way Write: copy kernel 20.42 GB/s   | ld_st 20.51 GB/s   | cudaMemcpyPeer 24.28 GB/s
+--------------------------------------------------------------------------------

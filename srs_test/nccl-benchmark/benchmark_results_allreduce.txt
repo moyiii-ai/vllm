@@ -1,0 +1,115 @@
+=== NCCL All-Reduce Buffer Size Sweep ===
+Start time: Thu Jan 15 08:23:29 PM EST 2026
+
+
+Buffer size: 1024 elements (0 MB per rank)
+----------------------------------------
+=== GPU Information ===
+GPU 0: NVIDIA L40S (Compute Capability: 8.9)
+GPU 1: NVIDIA L40S (Compute Capability: 8.9)
+=======================
+
+[Rank 0] count_per_rank=1024, avg_latency=0.007 ms, throughput=0.602 GB/s
+[Rank 1] count_per_rank=1024, avg_latency=0.007 ms, throughput=0.601 GB/s
+
+
+Buffer size: 4096 elements (.01 MB per rank)
+----------------------------------------
+=== GPU Information ===
+GPU 0: NVIDIA L40S (Compute Capability: 8.9)
+GPU 1: NVIDIA L40S (Compute Capability: 8.9)
+=======================
+
+[Rank 0] count_per_rank=4096, avg_latency=0.008 ms, throughput=1.930 GB/s
+[Rank 1] count_per_rank=4096, avg_latency=0.008 ms, throughput=1.932 GB/s
+
+
+Buffer size: 16384 elements (.06 MB per rank)
+----------------------------------------
+=== GPU Information ===
+GPU 0: NVIDIA L40S (Compute Capability: 8.9)
+GPU 1: NVIDIA L40S (Compute Capability: 8.9)
+=======================
+
+[Rank 1] count_per_rank=16384, avg_latency=0.013 ms, throughput=5.031 GB/s
+[Rank 0] count_per_rank=16384, avg_latency=0.013 ms, throughput=5.027 GB/s
+
+
+Buffer size: 65536 elements (.25 MB per rank)
+----------------------------------------
+=== GPU Information ===
+GPU 0: NVIDIA L40S (Compute Capability: 8.9)
+GPU 1: NVIDIA L40S (Compute Capability: 8.9)
+=======================
+
+[Rank 0] count_per_rank=65536, avg_latency=0.030 ms, throughput=8.755 GB/s
+[Rank 1] count_per_rank=65536, avg_latency=0.030 ms, throughput=8.749 GB/s
+
+
+Buffer size: 262144 elements (1.00 MB per rank)
+----------------------------------------
+=== GPU Information ===
+GPU 0: NVIDIA L40S (Compute Capability: 8.9)
+GPU 1: NVIDIA L40S (Compute Capability: 8.9)
+=======================
+
+[Rank 1] count_per_rank=262144, avg_latency=0.070 ms, throughput=15.012 GB/s
+[Rank 0] count_per_rank=262144, avg_latency=0.070 ms, throughput=15.010 GB/s
+
+
+Buffer size: 1048576 elements (4.00 MB per rank)
+----------------------------------------
+=== GPU Information ===
+GPU 0: NVIDIA L40S (Compute Capability: 8.9)
+GPU 1: NVIDIA L40S (Compute Capability: 8.9)
+=======================
+
+[Rank 1] count_per_rank=1048576, avg_latency=0.205 ms, throughput=20.442 GB/s
+[Rank 0] count_per_rank=1048576, avg_latency=0.205 ms, throughput=20.440 GB/s
+
+
+Buffer size: 4194304 elements (16.00 MB per rank)
+----------------------------------------
+=== GPU Information ===
+GPU 0: NVIDIA L40S (Compute Capability: 8.9)
+GPU 1: NVIDIA L40S (Compute Capability: 8.9)
+=======================
+
+[Rank 1] count_per_rank=4194304, avg_latency=0.786 ms, throughput=21.355 GB/s
+[Rank 0] count_per_rank=4194304, avg_latency=0.786 ms, throughput=21.352 GB/s
+
+
+Buffer size: 16777216 elements (64.00 MB per rank)
+----------------------------------------
+=== GPU Information ===
+GPU 0: NVIDIA L40S (Compute Capability: 8.9)
+GPU 1: NVIDIA L40S (Compute Capability: 8.9)
+=======================
+
+[Rank 1] count_per_rank=16777216, avg_latency=3.098 ms, throughput=21.660 GB/s
+[Rank 0] count_per_rank=16777216, avg_latency=3.098 ms, throughput=21.660 GB/s
+
+
+Buffer size: 67108864 elements (256.00 MB per rank)
+----------------------------------------
+=== GPU Information ===
+GPU 0: NVIDIA L40S (Compute Capability: 8.9)
+GPU 1: NVIDIA L40S (Compute Capability: 8.9)
+=======================
+
+[Rank 0] count_per_rank=67108864, avg_latency=12.368 ms, throughput=21.704 GB/s
+[Rank 1] count_per_rank=67108864, avg_latency=12.368 ms, throughput=21.704 GB/s
+
+
+Buffer size: 268435456 elements (1024.00 MB per rank)
+----------------------------------------
+=== GPU Information ===
+GPU 0: NVIDIA L40S (Compute Capability: 8.9)
+GPU 1: NVIDIA L40S (Compute Capability: 8.9)
+=======================
+
+[Rank 0] count_per_rank=268435456, avg_latency=48.930 ms, throughput=21.944 GB/s
+[Rank 1] count_per_rank=268435456, avg_latency=48.930 ms, throughput=21.944 GB/s
+
+End time: Thu Jan 15 08:23:49 PM EST 2026
+=== All-Reduce Benchmark Complete ===
