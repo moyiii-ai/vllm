@@ -44,8 +44,24 @@ else
     exit 1
 fi
 
-echo "Compiling $SRC_FILE..."
-nvcc -arch=sm_89 "$SRC_FILE" -o "$BIN_FILE"
+# Detect GPU architecture (nvidia-smi doesn't respect CUDA_VISIBLE_DEVICES, so parse it manually)
+if [ -n "$CUDA_VISIBLE_DEVICES" ]; then
+    # Extract the first GPU ID from CUDA_VISIBLE_DEVICES (e.g., "3,4" -> "3")
+    GPU_IDX=$(echo "$CUDA_VISIBLE_DEVICES" | cut -d',' -f1)
+else
+    GPU_IDX=0
+fi
+COMPUTE_CAP=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader,nounits -i "$GPU_IDX" | tr -d '.')
+if [ "$COMPUTE_CAP" = "120" ]; then
+    NVCC="/usr/local/cuda-13/bin/nvcc"
+    ARCH="sm_120"
+else
+    NVCC="nvcc"
+    ARCH="sm_${COMPUTE_CAP}"
+fi
+
+echo "Compiling $SRC_FILE with $NVCC -arch=$ARCH..."
+$NVCC -arch="$ARCH" "$SRC_FILE" -o "$BIN_FILE"
 if [ $? -ne 0 ]; then
     echo "Compilation failed!"
     exit 1
