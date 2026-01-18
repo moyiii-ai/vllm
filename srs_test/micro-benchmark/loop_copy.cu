@@ -4,6 +4,7 @@
 #include <signal.h>
 
 #include <iostream>
+#include <iomanip>
 #include <chrono>
 #include <string>
 #include <cctype>
@@ -28,8 +29,8 @@ void sig_int_handler(int signum) {
     }                                                                  \
   } while (0)
 
-#define GRID_SIZE 256
-#define BLOCK_SIZE 256
+#define GRID_SIZE 256   // number of blocks; best if multiple of SMs
+#define BLOCK_SIZE 256  // this is the number of threads per block
 
 __global__ void copyKernel(int* destination, const int* source,
                            size_t numElements) {
@@ -75,6 +76,17 @@ size_t parse_size(const std::string& s) {
   return n;
 }
 
+// Improved readability: declare as a regular function for clarity
+void print_gpu_info(const char* which, const cudaDeviceProp& prop, int id) {
+  std::cout << which << " GPU (ID " << id << "): " << prop.name
+            << ", Compute Capability: " << prop.major << "." << prop.minor
+            << ", PCIe Address: "
+            << std::hex << std::setw(2) << std::setfill('0') << prop.pciBusID
+            << ":" << std::setw(2) << std::setfill('0') << prop.pciDeviceID
+            << "." << prop.pciDomainID
+            << std::dec << std::endl;
+}
+
 int main(int argc, char* argv[]) {
   if (argc < 3 || argc > 5) {
     std::cerr << "Usage: " << argv[0] << " <read|write> <gpu_id> [sync] [size]"
@@ -97,6 +109,16 @@ int main(int argc, char* argv[]) {
 
   size_t numElements = TRANSFER_SIZE / sizeof(int);
   int peer_gpu = (gpu_id == 0) ? 1 : 0;
+
+  // Print name, compute capability, and PCIe address for source and peer GPUs
+
+  cudaDeviceProp prop_source, prop_peer;
+  CUDA_CHECK(cudaGetDeviceProperties(&prop_source, gpu_id));
+  CUDA_CHECK(cudaGetDeviceProperties(&prop_peer, peer_gpu));
+
+  print_gpu_info("Source", prop_source, gpu_id);
+  print_gpu_info("Peer", prop_peer, peer_gpu);
+
 
   signal(SIGINT, sig_int_handler);
 
