@@ -43,3 +43,76 @@ Scripts for supplementary tasks like benchmarking and text preparation:
     * Serves as a dependency for client_query_twice.py: the generated long text is used as a shared common prefix for the client’s two consecutive queries.
 
 3. narrativeqa.jsonl: The LongBench-aligned NarrativeQA dataset file used in vLLM benchmark scripts to provide prompts for inference performance testing.
+
+
+
+# vLLM Server/Client Benchmark Scripts
+This folder contains scripts to run vLLM servers and clients under different deployment configurations (Data Parallelism, Tensor Parallelism, single GPU, LMCache and RDMA).
+
+## Prerequisites
+- Environment with **vLLM v0.10.1** and **LMCache v0.3.3** installed (compatibility with other versions is not guaranteed).
+- Adjust script parameters (e.g., target GPU IDs, request rate, dataset name) before execution to match your hardware/experimental setup.
+
+## Basic Workflow
+1. Start the target vLLM server.
+2. Launch the corresponding client script:
+   - The client will exit automatically after completion and write results to log files.
+   - The server must be stopped manually (e.g., with `Ctrl+C`).
+
+---
+
+## Experimental Configurations & Usage
+Below are step-by-step instructions for running benchmarks across different setups:
+
+### 1. Compare DP vs. Single GPU (with LMCache)
+#### 1.1 Single GPU + LMCache
+1. Start the server: `./server_lmcache.sh`
+2. Warm up LMCache (preload all prompts): `./client_benchmark_warmup.sh` (wait for completion).
+3. Run the benchmark: `./client_benchmark_single.sh`
+
+#### 1.2 DP + LMCache
+> Note: We observed unexpected behavior with vLLM's `--data-parallel-size 2` flag, so we manually launch separate servers on two GPUs instead.
+1. Start two DP servers (each on a separate GPU):
+   - `./server_dp0.sh` (GPU 0)
+   - `./server_dp1.sh` (GPU 1)
+2. Warm up both servers simultaneously: `./client_benchmark_warmup_dp.sh`
+3. Run dual-client benchmarks (send traffic to both servers): `./client_benchmark_dp.sh`
+
+### 2. Load Balance: DP + LMCache + RDMA
+1. Start DP servers: `./server_dp0.sh` (GPU 0) and `./server_dp1.sh` (GPU 1).
+2. Warm up LMCache on both servers: `./client_benchmark_warmup_dp.sh`.
+3. Start the RDMA server (on the same GPU as `server_dp0`): `./rdma_replay/bin/rdma_server`.
+4. Launch the RDMA client and DP benchmark **simultaneously**:
+   - `./rdma_replay/bin/rdma_client`
+   - `./client_benchmark_dp.sh`
+
+### 3. Compare TP vs. Single GPU
+#### 3.1 Single GPU
+1. Start the server (choose one based on LMCache usage):
+   - Without LMCache: `./server_simple.sh`
+   - With LMCache: `./server_lmcache.sh`
+2. Run the benchmark: `./client_benchmark_tp.sh`
+
+#### 3.2 TP
+1. Start the TP server (choose one based on LMCache usage):
+   - Without LMCache: `./server_tp.sh`
+   - With LMCache: `./server_tp_lmcache.sh`
+2. Run the benchmark: `./client_benchmark_tp.sh`
+
+---
+
+## Results & Data Analysis
+- **Raw Experimental Results**: The original benchmark results are stored in the `original_result` folder.
+- **Dataset Naming Rule**: Folders named with `alpaca` correspond to the Alpaca dataset; any folder not containing `alpaca` in its name uses the NarrativeQA dataset by default.
+- **Analysis & Plot Scripts**: Data analysis and visualization scripts are provided in the same directory:
+  - `DP_plot.py`: For analyzing Data Parallelism benchmark results
+  - `TP_plot.py`: For analyzing Tensor Parallelism benchmark results
+  - `LB_plot.py`: For analyzing Load Balance benchmark results (DP + LMCache + RDMA)
+- **Note**: These scripts read data from specific subfolders under `original_result`. Due to potential changes in folder structure or naming conventions, you may need to modify the file paths in the scripts before execution to match your local setup.
+
+---
+
+## Important Notes
+- **Environment Compatibility**: These scripts depend on vLLM's folder structure and environment variables. For best results, use them in the context of the repository:  
+  `https://github.com/moyiii-ai/vllm/tree/main/srs_test`
+- **Script Dependencies**: Client scripts reference `benchmark_serving_xingyu.py`, which must be placed in the `benchmarks/` directory at the root of the vLLM repository.

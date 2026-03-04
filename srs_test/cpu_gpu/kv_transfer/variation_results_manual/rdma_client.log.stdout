@@ -1,0 +1,42 @@
+GPU memory allocated on GPU4: 0x7179ce000000 (size: 32 MB)
+Trying to connect to server at : 10.1.1.2 port: 60000
+The client is connected successfully
+---------------------------------------------------------
+buffer attr, addr: 0x705593a00010 , len: 33554432 , stag : 0x68543 
+---------------------------------------------------------
+Handshake complete. Ready to transfer.
+Signaled ready to PID 2919749 (SIGUSR1)
+Received start signal. Starting data transfer...
+[progress] iters=448 (+448), interval=0.307s, throughput=45.61 GB/s
+[progress] iters=832 (+384), interval=0.975s, throughput=12.30 GB/s
+[progress] iters=1216 (+384), interval=1.308s, throughput=9.17 GB/s
+[progress] iters=1600 (+384), interval=1.308s, throughput=9.17 GB/s
+[progress] iters=2048 (+448), interval=1.527s, throughput=9.17 GB/s
+[progress] iters=2432 (+384), interval=1.308s, throughput=9.17 GB/s
+[progress] iters=2816 (+384), interval=1.309s, throughput=9.17 GB/s
+[progress] iters=3200 (+384), interval=1.308s, throughput=9.17 GB/s
+[progress] iters=3648 (+448), interval=1.527s, throughput=9.17 GB/s
+[progress] iters=4032 (+384), interval=1.308s, throughput=9.17 GB/s
+[progress] iters=4416 (+384), interval=1.308s, throughput=9.17 GB/s
+[progress] iters=4800 (+384), interval=1.309s, throughput=9.17 GB/s
+[progress] iters=5248 (+448), interval=0.699s, throughput=20.02 GB/s
+[progress] iters=5632 (+384), interval=0.263s, throughput=45.63 GB/s
+[progress] iters=6016 (+384), interval=0.263s, throughput=45.63 GB/s
+[progress] iters=6400 (+384), interval=0.263s, throughput=45.63 GB/s
+[progress] iters=6848 (+448), interval=0.307s, throughput=45.63 GB/s
+[progress] iters=7232 (+384), interval=0.263s, throughput=45.63 GB/s
+[progress] iters=7616 (+384), interval=0.263s, throughput=45.63 GB/s
+[progress] iters=8000 (+384), interval=0.263s, throughput=45.63 GB/s
+[progress] iters=8448 (+448), interval=0.307s, throughput=45.63 GB/s
+[progress] iters=8832 (+384), interval=0.263s, throughput=45.63 GB/s
+[progress] iters=9216 (+384), interval=0.263s, throughput=45.63 GB/s
+[progress] iters=9600 (+384), interval=0.263s, throughput=45.63 GB/s
+[progress] iters=10000 (+400), interval=0.274s, throughput=45.63 GB/s
+
+=== RDMA Client Results ===
+Total iterations: 10000
+Message size: 33554432 bytes
+tx_depth: 128, cq_mod: 64, post_list: 64, warmup: 0
+Total data transferred: 312.50 GB
+Measured time: 18.756 seconds
+Throughput: 16.66 GB/s
