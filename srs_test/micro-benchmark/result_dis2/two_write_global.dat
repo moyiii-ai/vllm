@@ -1,0 +1,12 @@
+Compiling throughput_global.cu...
+Running throughput_global with mode 2, operation write, base GPU ...
+Press Enter to start the benchmark...
+DataSize: 4 KB, 2-way, GPU0->GPU1 Avg: 0.49 GB/s, GPU1->GPU0 Avg: 0.56 GB/s
+DataSize: 32 KB, 2-way, GPU0->GPU1 Avg: 3.58 GB/s, GPU1->GPU0 Avg: 3.58 GB/s
+DataSize: 128 KB, 2-way, GPU0->GPU1 Avg: 9.89 GB/s, GPU1->GPU0 Avg: 9.91 GB/s
+DataSize: 512 KB, 2-way, GPU0->GPU1 Avg: 17.15 GB/s, GPU1->GPU0 Avg: 17.15 GB/s
+DataSize: 1 MB, 2-way, GPU0->GPU1 Avg: 19.28 GB/s, GPU1->GPU0 Avg: 19.33 GB/s
+DataSize: 100 MB, 2-way, GPU0->GPU1 Avg: 22.06 GB/s, GPU1->GPU0 Avg: 22.06 GB/s
+DataSize: 1 GB, 2-way, GPU0->GPU1 Avg: 22.08 GB/s, GPU1->GPU0 Avg: 22.08 GB/s
+DataSize: 8 GB, 2-way, GPU0->GPU1 Avg: 22.08 GB/s, GPU1->GPU0 Avg: 22.08 GB/s
+Execution completed successfully.

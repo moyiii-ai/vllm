@@ -1,0 +1,12 @@
+Compiling throughput_copy.cu...
+Running throughput_copy with mode 2, operation read, base GPU ...
+Press Enter to start the benchmark...
+DataSize: 4 KB, 2-way, GPU0->GPU1: 0.25 GB/s, GPU1->GPU0: 0.61 GB/s
+DataSize: 32 KB, 2-way, GPU0->GPU1: 4.52 GB/s, GPU1->GPU0: 4.16 GB/s
+DataSize: 128 KB, 2-way, GPU0->GPU1: 11.11 GB/s, GPU1->GPU0: 11.11 GB/s
+DataSize: 512 KB, 2-way, GPU0->GPU1: 17.71 GB/s, GPU1->GPU0: 17.74 GB/s
+DataSize: 1 MB, 2-way, GPU0->GPU1: 19.62 GB/s, GPU1->GPU0: 19.64 GB/s
+DataSize: 100 MB, 2-way, GPU0->GPU1: 22.02 GB/s, GPU1->GPU0: 22.03 GB/s
+DataSize: 1 GB, 2-way, GPU0->GPU1: 22.05 GB/s, GPU1->GPU0: 22.05 GB/s
+DataSize: 8 GB, 2-way, GPU0->GPU1: 22.05 GB/s, GPU1->GPU0: 22.05 GB/s
+Execution completed successfully.

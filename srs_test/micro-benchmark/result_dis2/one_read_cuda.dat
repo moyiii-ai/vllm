@@ -1,0 +1,12 @@
+Compiling throughput_cuda.cu...
+Running throughput_cuda with mode 1, operation read, base GPU 0...
+Press Enter to start the memcpy benchmark...
+DataSize: 4 KB, 1-way, base GPU 0, read Avg Throughput: 0.21 GB/s
+DataSize: 32 KB, 1-way, base GPU 0, read Avg Throughput: 2.08 GB/s
+DataSize: 128 KB, 1-way, base GPU 0, read Avg Throughput: 8.23 GB/s
+DataSize: 512 KB, 1-way, base GPU 0, read Avg Throughput: 15.31 GB/s
+DataSize: 1 MB, 1-way, base GPU 0, read Avg Throughput: 19.77 GB/s
+DataSize: 100 MB, 1-way, base GPU 0, read Avg Throughput: 26.35 GB/s
+DataSize: 1 GB, 1-way, base GPU 0, read Avg Throughput: 26.40 GB/s
+DataSize: 8 GB, 1-way, base GPU 0, read Avg Throughput: 26.37 GB/s
+Execution completed successfully.

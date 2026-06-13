@@ -1,0 +1,12 @@
+Compiling throughput_global.cu...
+Running throughput_global with mode 1, operation read, base GPU 0...
+Press Enter to start the benchmark...
+DataSize: 4 KB, 1-way, base GPU 0, Operation: read, Avg Throughput: 0.59 GB/s
+DataSize: 32 KB, 1-way, base GPU 0, Operation: read, Avg Throughput: 4.12 GB/s
+DataSize: 128 KB, 1-way, base GPU 0, Operation: read, Avg Throughput: 11.21 GB/s
+DataSize: 512 KB, 1-way, base GPU 0, Operation: read, Avg Throughput: 19.84 GB/s
+DataSize: 1 MB, 1-way, base GPU 0, Operation: read, Avg Throughput: 22.81 GB/s
+DataSize: 100 MB, 1-way, base GPU 0, Operation: read, Avg Throughput: 26.79 GB/s
+DataSize: 1 GB, 1-way, base GPU 0, Operation: read, Avg Throughput: 26.83 GB/s
+DataSize: 8 GB, 1-way, base GPU 0, Operation: read, Avg Throughput: 26.83 GB/s
+Execution completed successfully.

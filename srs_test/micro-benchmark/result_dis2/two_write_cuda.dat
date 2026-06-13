@@ -1,0 +1,12 @@
+Compiling throughput_cuda.cu...
+Running throughput_cuda with mode 2, operation write, base GPU ...
+Press Enter to start the memcpy benchmark...
+DataSize: 4 KB, 2-way, GPU0->GPU1 write Avg: 0.62 GB/s, GPU1->GPU0 write Avg: 0.61 GB/s
+DataSize: 32 KB, 2-way, GPU0->GPU1 write Avg: 4.10 GB/s, GPU1->GPU0 write Avg: 3.73 GB/s
+DataSize: 128 KB, 2-way, GPU0->GPU1 write Avg: 11.24 GB/s, GPU1->GPU0 write Avg: 9.84 GB/s
+DataSize: 512 KB, 2-way, GPU0->GPU1 write Avg: 19.27 GB/s, GPU1->GPU0 write Avg: 22.17 GB/s
+DataSize: 1 MB, 2-way, GPU0->GPU1 write Avg: 22.03 GB/s, GPU1->GPU0 write Avg: 23.94 GB/s
+DataSize: 100 MB, 2-way, GPU0->GPU1 write Avg: 26.09 GB/s, GPU1->GPU0 write Avg: 26.09 GB/s
+DataSize: 1 GB, 2-way, GPU0->GPU1 write Avg: 26.11 GB/s, GPU1->GPU0 write Avg: 26.11 GB/s
+DataSize: 8 GB, 2-way, GPU0->GPU1 write Avg: 26.07 GB/s, GPU1->GPU0 write Avg: 26.07 GB/s
+Execution completed successfully.
