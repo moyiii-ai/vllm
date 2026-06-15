@@ -31,7 +31,7 @@ import time
 import uuid
 import warnings
 from collections.abc import AsyncGenerator, Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -48,6 +48,7 @@ from vllm.benchmarks.lib.endpoint_request_func import (
     POOLING_BACKENDS,
     RequestFuncInput,
     RequestFuncOutput,
+    compute_request_phase_tpots,
 )
 from vllm.benchmarks.lib.ready_checker import wait_for_endpoint
 from vllm.benchmarks.lib.utils import convert_to_pytorch_benchmark_format, write_to_json
@@ -199,6 +200,36 @@ class BenchmarkMetrics:
     # Max output tokens per second and concurrent requests at that peak
     max_output_tokens_per_s: float
     max_concurrent_requests: int
+    mean_thinking_ttft_ms: float = 0.0
+    median_thinking_ttft_ms: float = 0.0
+    percentiles_thinking_ttft_ms: list[tuple[float, float]] = field(
+        default_factory=list
+    )
+    mean_thinking_itl_ms: float = 0.0
+    median_thinking_itl_ms: float = 0.0
+    std_thinking_itl_ms: float = 0.0
+    percentiles_thinking_itl_ms: list[tuple[float, float]] = field(
+        default_factory=list
+    )
+    mean_thinking_tpot_ms: float = 0.0
+    median_thinking_tpot_ms: float = 0.0
+    std_thinking_tpot_ms: float = 0.0
+    percentiles_thinking_tpot_ms: list[tuple[float, float]] = field(
+        default_factory=list
+    )
+    mean_answer_ttft_ms: float = 0.0
+    median_answer_ttft_ms: float = 0.0
+    percentiles_answer_ttft_ms: list[tuple[float, float]] = field(default_factory=list)
+    mean_answer_itl_ms: float = 0.0
+    median_answer_itl_ms: float = 0.0
+    std_answer_itl_ms: float = 0.0
+    percentiles_answer_itl_ms: list[tuple[float, float]] = field(default_factory=list)
+    mean_answer_tpot_ms: float = 0.0
+    median_answer_tpot_ms: float = 0.0
+    std_answer_tpot_ms: float = 0.0
+    percentiles_answer_tpot_ms: list[tuple[float, float]] = field(
+        default_factory=list
+    )
     rtfx: float = 0.0  # Inverse Real-Time Factor for ASR benchmarks
 
 
@@ -415,6 +446,12 @@ def calculate_metrics(
     completed = 0
     good_completed = 0
     itls: list[float] = []
+    thinking_itls: list[float] = []
+    thinking_tpots: list[float] = []
+    answer_itls: list[float] = []
+    answer_tpots: list[float] = []
+    thinking_ttfts: list[float] = []
+    answer_ttfts: list[float] = []
     tpots: list[float] = []
     all_tpots: list[float] = []
     ttfts: list[float] = []
@@ -448,6 +485,19 @@ def calculate_metrics(
             # Note: if output_len <= 1, we regard tpot as 0 for goodput
             all_tpots.append(tpot)
             itls += outputs[i].itl
+            thinking_itls += outputs[i].thinking_itl
+            answer_itls += outputs[i].answer_itl
+            thinking_tpot, answer_tpot = compute_request_phase_tpots(
+                outputs[i], tokenizer
+            )
+            if outputs[i].thinking_ttft >= 0.0:
+                thinking_ttfts.append(outputs[i].thinking_ttft)
+                if thinking_tpot >= 0.0:
+                    thinking_tpots.append(thinking_tpot)
+            if outputs[i].answer_ttft >= 0.0:
+                answer_ttfts.append(outputs[i].answer_ttft)
+                if answer_tpot >= 0.0:
+                    answer_tpots.append(answer_tpot)
             ttfts.append(outputs[i].ttft)
             e2els.append(outputs[i].latency)
             input_audio_duration += outputs[i].input_audio_duration
@@ -586,6 +636,46 @@ def calculate_metrics(
         median_itl_ms=np.median(itls or 0) * 1000,
         percentiles_itl_ms=[
             (p, np.percentile(itls or 0, p) * 1000) for p in selected_percentiles
+        ],
+        mean_thinking_ttft_ms=np.mean(thinking_ttfts or 0) * 1000,
+        median_thinking_ttft_ms=np.median(thinking_ttfts or 0) * 1000,
+        percentiles_thinking_ttft_ms=[
+            (p, np.percentile(thinking_ttfts or 0, p) * 1000)
+            for p in selected_percentiles
+        ],
+        mean_thinking_itl_ms=np.mean(thinking_itls or 0) * 1000,
+        std_thinking_itl_ms=np.std(thinking_itls or 0) * 1000,
+        median_thinking_itl_ms=np.median(thinking_itls or 0) * 1000,
+        percentiles_thinking_itl_ms=[
+            (p, np.percentile(thinking_itls or 0, p) * 1000)
+            for p in selected_percentiles
+        ],
+        mean_thinking_tpot_ms=np.mean(thinking_tpots or 0) * 1000,
+        std_thinking_tpot_ms=np.std(thinking_tpots or 0) * 1000,
+        median_thinking_tpot_ms=np.median(thinking_tpots or 0) * 1000,
+        percentiles_thinking_tpot_ms=[
+            (p, np.percentile(thinking_tpots or 0, p) * 1000)
+            for p in selected_percentiles
+        ],
+        mean_answer_ttft_ms=np.mean(answer_ttfts or 0) * 1000,
+        median_answer_ttft_ms=np.median(answer_ttfts or 0) * 1000,
+        percentiles_answer_ttft_ms=[
+            (p, np.percentile(answer_ttfts or 0, p) * 1000)
+            for p in selected_percentiles
+        ],
+        mean_answer_itl_ms=np.mean(answer_itls or 0) * 1000,
+        std_answer_itl_ms=np.std(answer_itls or 0) * 1000,
+        median_answer_itl_ms=np.median(answer_itls or 0) * 1000,
+        percentiles_answer_itl_ms=[
+            (p, np.percentile(answer_itls or 0, p) * 1000)
+            for p in selected_percentiles
+        ],
+        mean_answer_tpot_ms=np.mean(answer_tpots or 0) * 1000,
+        std_answer_tpot_ms=np.std(answer_tpots or 0) * 1000,
+        median_answer_tpot_ms=np.median(answer_tpots or 0) * 1000,
+        percentiles_answer_tpot_ms=[
+            (p, np.percentile(answer_tpots or 0, p) * 1000)
+            for p in selected_percentiles
         ],
         mean_e2el_ms=np.mean(e2els or 0) * 1000,
         std_e2el_ms=np.std(e2els or 0) * 1000,
@@ -994,6 +1084,18 @@ async def benchmark(
             "output_lens": actual_output_lens,
             "ttfts": [output.ttft for output in outputs],
             "itls": [output.itl for output in outputs],
+            "thinking_ttfts": [output.thinking_ttft for output in outputs],
+            "thinking_itls": [output.thinking_itl for output in outputs],
+            "thinking_tpots": [
+                compute_request_phase_tpots(output, tokenizer)[0]
+                for output in outputs
+            ],
+            "answer_ttfts": [output.answer_ttft for output in outputs],
+            "answer_itls": [output.answer_itl for output in outputs],
+            "answer_tpots": [
+                compute_request_phase_tpots(output, tokenizer)[1]
+                for output in outputs
+            ],
             "start_times": [output.start_time for output in outputs],
             "generated_texts": [output.generated_text for output in outputs],
             "errors": [output.error for output in outputs],
@@ -1034,10 +1136,16 @@ async def benchmark(
         metric_name: str,
         # E.g., "Time to First Token"
         metric_header: str,
+        allowed_metrics: list[str] | None = None,
     ):
         # This function prints and adds statistics of the specified
         # metric.
-        if metric_attribute_name not in selected_percentile_metrics:
+        metrics_to_include = (
+            allowed_metrics
+            if allowed_metrics is not None
+            else selected_percentile_metrics
+        )
+        if metric_attribute_name not in metrics_to_include:
             return
         print("{s:{c}^{n}}".format(s=metric_header, n=50, c="-"))
         print(
@@ -1058,18 +1166,65 @@ async def benchmark(
         result[f"median_{metric_attribute_name}_ms"] = getattr(
             metrics, f"median_{metric_attribute_name}_ms"
         )
-        result[f"std_{metric_attribute_name}_ms"] = getattr(
-            metrics, f"std_{metric_attribute_name}_ms"
-        )
+        std_value = getattr(metrics, f"std_{metric_attribute_name}_ms", 0.0)
+        result[f"std_{metric_attribute_name}_ms"] = std_value
         for p, value in getattr(metrics, f"percentiles_{metric_attribute_name}_ms"):
             p_word = str(int(p)) if int(p) == p else str(p)
             print("{:<40} {:<10.2f}".format(f"P{p_word} {metric_name} (ms):", value))
             result[f"p{p_word}_{metric_attribute_name}_ms"] = value
 
     if task_type == TaskType.GENERATION and tokenizer:
-        process_one_metric("ttft", "TTFT", "Time to First Token")
-        process_one_metric("tpot", "TPOT", "Time per Output Token (excl. 1st token)")
-        process_one_metric("itl", "ITL", "Inter-token Latency")
+        metrics_to_report = list(selected_percentile_metrics)
+        if any(
+            output.thinking_itl or output.thinking_ttft >= 0.0 for output in outputs
+        ):
+            for phase_metric in (
+                "thinking_ttft",
+                "thinking_tpot",
+                "answer_ttft",
+                "answer_tpot",
+            ):
+                if phase_metric not in metrics_to_report:
+                    metrics_to_report.append(phase_metric)
+
+        def process_one_metric_with_list(
+            metric_attribute_name: str,
+            metric_name: str,
+            metric_header: str,
+        ):
+            if metric_attribute_name not in metrics_to_report:
+                return
+            process_one_metric(
+                metric_attribute_name,
+                metric_name,
+                metric_header,
+                allowed_metrics=metrics_to_report,
+            )
+
+        process_one_metric_with_list("ttft", "TTFT", "Time to First Token")
+        process_one_metric_with_list(
+            "tpot", "TPOT", "Time per Output Token (excl. 1st token)"
+        )
+        process_one_metric_with_list("itl", "ITL", "Inter-token Latency")
+        if any(
+            output.thinking_itl or output.thinking_ttft >= 0.0 for output in outputs
+        ):
+            process_one_metric_with_list(
+                "thinking_ttft", "Thinking TTFT", "Time to First Thinking Token"
+            )
+            process_one_metric_with_list(
+                "thinking_tpot",
+                "Thinking TPOT",
+                "Thinking Time per Output Token (excl. 1st token)",
+            )
+            process_one_metric_with_list(
+                "answer_ttft", "Answer TTFT", "Time to First Answer Token"
+            )
+            process_one_metric_with_list(
+                "answer_tpot",
+                "Answer TPOT",
+                "Answer Time per Output Token (excl. 1st token)",
+            )
     process_one_metric("e2el", "E2EL", "End-to-end Latency")
 
     if spec_decode_stats is not None:
@@ -1438,7 +1593,9 @@ def add_cli_args(parser: argparse.ArgumentParser):
         default=None,
         help="Comma-separated list of selected metrics to report percentiles. "
         "This argument specifies the metrics to report percentiles. "
-        'Allowed metric names are "ttft", "tpot", "itl", "e2el". '
+        'Allowed metric names are "ttft", "tpot", "itl", "thinking_ttft", '
+        '"thinking_itl", "thinking_tpot", "answer_ttft", "answer_itl", '
+        '"answer_tpot", "e2el". '
         'If not specified, defaults to "ttft,tpot,itl" for generative models '
         'and "e2el" for pooling models.',
     )
@@ -1973,6 +2130,12 @@ async def main_async(args: argparse.Namespace) -> dict[str, Any]:
             "start_times",
             "ttfts",
             "itls",
+            "thinking_ttfts",
+            "thinking_itls",
+            "thinking_tpots",
+            "answer_ttfts",
+            "answer_itls",
+            "answer_tpots",
             "generated_texts",
             "errors",
         ]:

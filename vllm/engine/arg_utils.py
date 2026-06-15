@@ -610,6 +610,8 @@ class EngineArgs:
     )
     enable_mm_processor_stats: bool = ObservabilityConfig.enable_mm_processor_stats
     scheduling_policy: SchedulerPolicy = SchedulerConfig.policy
+    defer_answer_decode: bool = SchedulerConfig.defer_answer_decode
+    answer_decode_throttle_ms: int | None = SchedulerConfig.answer_decode_throttle_ms
     scheduler_cls: str | type[object] | None = SchedulerConfig.scheduler_cls
 
     pooler_config: PoolerConfig | None = ModelConfig.pooler_config
@@ -1337,6 +1339,13 @@ class EngineArgs:
             "--scheduling-policy", **scheduler_kwargs["policy"]
         )
         scheduler_group.add_argument(
+            "--defer-answer-decode", **scheduler_kwargs["defer_answer_decode"]
+        )
+        scheduler_group.add_argument(
+            "--answer-decode-throttle-ms",
+            **scheduler_kwargs["answer_decode_throttle_ms"],
+        )
+        scheduler_group.add_argument(
             "--enable-chunked-prefill",
             **{
                 **scheduler_kwargs["enable_chunked_prefill"],
@@ -1961,6 +1970,8 @@ class EngineArgs:
             is_multimodal_model=model_config.is_multimodal_model,
             is_encoder_decoder=model_config.is_encoder_decoder,
             policy=self.scheduling_policy,
+            defer_answer_decode=self.defer_answer_decode,
+            answer_decode_throttle_ms=self.answer_decode_throttle_ms,
             scheduler_cls=self.scheduler_cls,
             max_num_partial_prefills=self.max_num_partial_prefills,
             max_long_partial_prefills=self.max_long_partial_prefills,

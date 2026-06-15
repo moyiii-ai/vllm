@@ -91,6 +91,14 @@ class RequestFuncOutput:
     output_tokens: int = 0
     ttft: float = 0.0  # Time to first token
     itl: list[float] = field(default_factory=list)  # list of inter-token latencies
+    thinking_ttft: float = -1.0  # Time to first reasoning token; <0 means unset
+    thinking_itl: list[float] = field(default_factory=list)
+    last_thinking_time: float = -1.0  # Timestamp of last reasoning stream chunk
+    reasoning_text: str = ""
+    answer_ttft: float = -1.0  # Time to first answer/content token; <0 means unset
+    answer_itl: list[float] = field(default_factory=list)
+    last_answer_time: float = -1.0  # Timestamp of last answer stream chunk
+    content_text: str = ""
     tpot: float = 0.0  # avg next-token latencies
     prompt_len: int = 0
     error: str = ""
@@ -149,6 +157,109 @@ def _get_headers(content_type: str | None = None) -> dict[str, str]:
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     return headers
+
+
+def count_phase_tokens(
+    text: str,
+    tokenizer: Any | None,
+    num_stream_chunks: int,
+) -> int:
+    """Count tokens in a generation phase, preferring the tokenizer when set."""
+    if text and tokenizer is not None:
+        return len(tokenizer(text, add_special_tokens=False).input_ids)
+    if num_stream_chunks > 0:
+        return num_stream_chunks
+    return 0
+
+
+def compute_phase_tpot(
+    phase_ttft: float,
+    last_phase_time: float,
+    start_time: float,
+    phase_token_count: int,
+) -> float:
+    """TPOT for one generation phase (excl. the phase's first token/chunk).
+
+    Returns ``-1.0`` when the phase was not observed. Returns ``0.0`` when the
+    phase produced at most one token/chunk, matching overall TPOT handling.
+    """
+    if phase_ttft < 0.0 or last_phase_time < 0.0 or phase_token_count <= 0:
+        return -1.0
+    if phase_token_count <= 1:
+        return 0.0
+    phase_duration = last_phase_time - (start_time + phase_ttft)
+    return phase_duration / (phase_token_count - 1)
+
+
+def compute_request_phase_tpots(
+    output: RequestFuncOutput,
+    tokenizer: Any | None,
+) -> tuple[float, float]:
+    """Return ``(thinking_tpot, answer_tpot)`` for one request output."""
+    thinking_tpot = -1.0
+    if output.thinking_ttft >= 0.0:
+        thinking_tpot = compute_phase_tpot(
+            output.thinking_ttft,
+            output.last_thinking_time,
+            output.start_time,
+            count_phase_tokens(
+                output.reasoning_text,
+                tokenizer,
+                1 + len(output.thinking_itl),
+            ),
+        )
+
+    answer_tpot = -1.0
+    if output.answer_ttft >= 0.0:
+        answer_tpot = compute_phase_tpot(
+            output.answer_ttft,
+            output.last_answer_time,
+            output.start_time,
+            count_phase_tokens(
+                output.content_text,
+                tokenizer,
+                1 + len(output.answer_itl),
+            ),
+        )
+
+    return thinking_tpot, answer_tpot
+
+
+def _record_stream_token_delta(
+    output: RequestFuncOutput,
+    *,
+    timestamp: float,
+    start_time: float,
+    last_token_time: float | None,
+    phase: Literal["thinking", "answer"],
+    delta_text: str = "",
+) -> float:
+    """Record TTFT/ITL for a reasoning or answer stream delta."""
+    itl = None if last_token_time is None else timestamp - last_token_time
+
+    if phase == "thinking":
+        if output.thinking_ttft < 0.0:
+            output.thinking_ttft = timestamp - start_time
+        elif itl is not None:
+            output.thinking_itl.append(itl)
+        output.last_thinking_time = timestamp
+        if delta_text:
+            output.reasoning_text += delta_text
+    else:
+        if output.answer_ttft < 0.0:
+            output.answer_ttft = timestamp - start_time
+        elif itl is not None:
+            output.answer_itl.append(itl)
+        output.last_answer_time = timestamp
+        if delta_text:
+            output.content_text += delta_text
+
+    if output.ttft == 0.0:
+        output.ttft = timestamp - start_time
+    elif itl is not None:
+        output.itl.append(itl)
+
+    return timestamp
 
 
 async def async_request_openai_completions(
@@ -321,10 +432,9 @@ async def async_request_openai_chat_completions(
     output.prompt_len = request_func_input.prompt_len
 
     generated_text = ""
-    ttft = 0.0
     st = time.perf_counter()
     output.start_time = st
-    most_recent_timestamp = st
+    last_token_time: float | None = None
     try:
         async with session.post(url=api_url, json=payload, headers=headers) as response:
             if response.status == 200:
@@ -349,27 +459,39 @@ async def async_request_openai_chat_completions(
                             data = json.loads(chunk)
 
                             if choices := data.get("choices"):
-                                content = choices[0]["delta"].get("content")
-                                # First token
-                                if ttft == 0.0:
-                                    ttft = timestamp - st
-                                    output.ttft = ttft
-
-                                # Decoding phase
-                                else:
-                                    output.itl.append(timestamp - most_recent_timestamp)
-
-                                generated_text += content or ""
+                                delta = choices[0]["delta"]
+                                reasoning = delta.get("reasoning")
+                                content = delta.get("content")
+                                if reasoning:
+                                    last_token_time = _record_stream_token_delta(
+                                        output,
+                                        timestamp=timestamp,
+                                        start_time=st,
+                                        last_token_time=last_token_time,
+                                        phase="thinking",
+                                        delta_text=reasoning,
+                                    )
+                                    generated_text += reasoning
+                                if content:
+                                    last_token_time = _record_stream_token_delta(
+                                        output,
+                                        timestamp=timestamp,
+                                        start_time=st,
+                                        last_token_time=last_token_time,
+                                        phase="answer",
+                                        delta_text=content,
+                                    )
+                                    generated_text += content
                             elif usage := data.get("usage"):
                                 output.output_tokens = usage.get("completion_tokens")
                                 if (pt := usage.get("prompt_tokens")) is not None:
                                     output.prompt_len = pt
 
-                            most_recent_timestamp = timestamp
-
                 output.generated_text = generated_text
                 output.success = True
-                output.latency = most_recent_timestamp - st
+                output.latency = (
+                    last_token_time - st if last_token_time is not None else 0.0
+                )
             else:
                 output.error = response.reason or ""
                 output.success = False

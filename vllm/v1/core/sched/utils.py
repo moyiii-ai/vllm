@@ -2,9 +2,16 @@
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 import contextlib
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
+from vllm.logger import init_logger
 from vllm.sampling_params import RepetitionDetectionParams
 from vllm.v1.request import Request, RequestStatus
+
+if TYPE_CHECKING:
+    from vllm.config.reasoning import ReasoningConfig
+
+logger = init_logger(__name__)
 
 
 def _has_repeating_pattern(
@@ -91,14 +98,142 @@ def remove_all(lst: list, items_to_remove: set) -> list:
     return [item for item in lst if item not in items_to_remove]
 
 
-def check_stop(request: Request, max_model_len: int) -> bool:
+def _find_subsequence(haystack: Sequence[int], needle: Sequence[int]) -> int | None:
+    """Return the start index of ``needle`` in ``haystack``, or ``None``."""
+    needle_len = len(needle)
+    if needle_len == 0 or len(haystack) < needle_len:
+        return None
+    for start in range(len(haystack) - needle_len + 1):
+        if list(haystack[start : start + needle_len]) == list(needle):
+            return start
+    return None
+
+
+def compute_thinking_answer_split(
+    output_token_ids: Sequence[int],
+    reasoning_config: "ReasoningConfig | None",
+) -> tuple[int, int, bool]:
+    """Split generated tokens into thinking and answer counts.
+
+    Returns:
+        A tuple of (thinking_token_count, answer_token_count,
+        thinking_phase_completed). When reasoning is disabled or unavailable,
+        all output tokens are counted as answer tokens and
+        ``thinking_phase_completed`` is ``True``.
+    """
+    num_output = len(output_token_ids)
+    if num_output == 0:
+        return 0, 0, True
+
+    if reasoning_config is None or not reasoning_config.enabled:
+        return 0, num_output, True
+
+    end_token_ids = reasoning_config.reasoning_end_token_ids
+    if not end_token_ids:
+        return 0, num_output, True
+
+    end_pos = _find_subsequence(output_token_ids, end_token_ids)
+    if end_pos is not None:
+        thinking_count = end_pos
+        answer_count = num_output - end_pos - len(end_token_ids)
+        return thinking_count, max(answer_count, 0), True
+
+    return num_output, 0, False
+
+
+def update_thinking_answer_phase(
+    request: Request,
+    reasoning_config: "ReasoningConfig | None",
+) -> bool:
+    """Update per-request thinking/answer stats after a new output token.
+
+    Also checks whether the reasoning end token sequence (e.g.
+    ``</think>`` for Qwen3) has been generated.
+
+    Returns:
+        ``True`` if the thinking phase end marker was just completed.
+    """
+    prev_completed = request.thinking_phase_completed
+    thinking_count, answer_count, completed = compute_thinking_answer_split(
+        request.output_token_ids,
+        reasoning_config,
+    )
+    request.thinking_token_count = thinking_count
+    request.answer_token_count = answer_count
+    request.thinking_phase_completed = completed
+    return completed and not prev_completed
+
+
+def log_thinking_answer_stats(
+    request: Request,
+    reasoning_config: "ReasoningConfig | None",
+) -> None:
+    """Log thinking/answer token stats when a request finishes."""
+    if reasoning_config is None or not reasoning_config.enabled:
+        return
+
+    thinking_count, answer_count, completed = compute_thinking_answer_split(
+        request.output_token_ids,
+        reasoning_config,
+    )
+    request.thinking_token_count = thinking_count
+    request.answer_token_count = answer_count
+    request.thinking_phase_completed = completed
+
+    end_token_ids = reasoning_config.reasoning_end_token_ids or []
+    truncation_note = (
+        "thinking completed normally"
+        if completed
+        else (
+            "thinking truncated before reasoning end token "
+            f"{reasoning_config.reasoning_end_str!r}"
+        )
+    )
+    logger.info(
+        "Request %s thinking/answer stats: thinking_tokens=%d, "
+        "answer_tokens=%d, total_output_tokens=%d, "
+        "thinking_phase_completed=%s (%s), status=%s, stop_reason=%s, "
+        "reasoning_end_token_ids=%s",
+        request.request_id,
+        thinking_count,
+        answer_count,
+        request.num_output_tokens,
+        completed,
+        truncation_note,
+        request.status.name,
+        request.stop_reason,
+        end_token_ids,
+    )
+
+
+def check_stop(
+    request: Request,
+    max_model_len: int,
+    reasoning_config: "ReasoningConfig | None" = None,
+) -> bool:
     assert not request.pooling_params
 
     sampling_params = request.sampling_params
     assert sampling_params is not None
 
     if request.num_output_tokens < sampling_params.min_tokens:
+        if reasoning_config is not None:
+            update_thinking_answer_phase(request, reasoning_config)
         return False
+
+    thinking_end_just_seen = False
+    if reasoning_config is not None:
+        thinking_end_just_seen = update_thinking_answer_phase(
+            request, reasoning_config
+        )
+        if thinking_end_just_seen:
+            logger.debug(
+                "Request %s reached reasoning end token %r (token_ids=%s); "
+                "entering answer phase",
+                request.request_id,
+                reasoning_config.reasoning_end_str,
+                reasoning_config.reasoning_end_token_ids,
+            )
 
     last_token_id = request.output_token_ids[-1]
     if last_token_id == sampling_params.eos_token_id:

@@ -114,6 +114,17 @@ class SchedulerConfig:
     - "priority" means requests are handled based on given priority (lower
       value means earlier handling) and time of arrival deciding any ties)."""
 
+    defer_answer_decode: bool = False
+    """When enabled and reasoning is configured, answer-phase decode requests
+    are scheduled only after all thinking-phase decode and prefill work has
+    been scheduled in the current step."""
+
+    answer_decode_throttle_ms: int | None = None
+    """When set with reasoning configured, eligible answer-phase decode requests
+    (last output older than this interval in milliseconds) are scheduled before
+    running/waiting, up to token budget limits. Mutually exclusive with
+    ``defer_answer_decode``."""
+
     disable_chunked_mm_input: bool = False
     """If set to true and chunked prefill is enabled, we do not want to
     partially schedule a multimodal item. Only used in V1
@@ -234,6 +245,17 @@ class SchedulerConfig:
 
         self.max_num_encoder_input_tokens = self.max_num_batched_tokens
         self.encoder_cache_size = self.max_num_batched_tokens
+
+        if self.defer_answer_decode and self.answer_decode_throttle_ms is not None:
+            raise ValueError(
+                "defer_answer_decode and answer_decode_throttle_ms are mutually "
+                "exclusive; enable only one answer decode scheduling mode."
+            )
+        if self.answer_decode_throttle_ms is not None and self.answer_decode_throttle_ms <= 0:
+            raise ValueError(
+                f"answer_decode_throttle_ms must be positive, got "
+                f"{self.answer_decode_throttle_ms}."
+            )
 
         if self.enable_chunked_prefill:
             logger.info_once(

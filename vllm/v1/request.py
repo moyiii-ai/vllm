@@ -182,6 +182,11 @@ class Request:
         # None entry in the queue means finished.
         self.streaming_queue: deque[StreamingUpdate | None] | None = None
 
+        # Thinking/answer phase tracking for reasoning models (scheduler).
+        self.thinking_token_count: int = 0
+        self.answer_token_count: int = 0
+        self.thinking_phase_completed: bool = False
+
     @classmethod
     def from_engine_core_request(
         cls,
