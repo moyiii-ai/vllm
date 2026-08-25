@@ -1,0 +1,4 @@
+dataset=/home/ruoshi/workspace-l40s/vllm/srs_test/test_mooncake/test_symmetric/../narrativeqa_local.jsonl
+line=1
+prompt_chars=127701
+max_tokens=16

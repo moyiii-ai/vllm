@@ -1,0 +1,5 @@
+dataset=/home/ruoshi/workspace-l40s/vllm/srs_test/test_mooncake/test_symmetric/../narrativeqa_remote.jsonl
+line=1
+prompt_chars=150584
+max_tokens=16
+extra={"kv_transfer_params":{"max_offload_tokens":0}}

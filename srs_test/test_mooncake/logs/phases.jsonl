@@ -1,0 +1,4 @@
+{"event": "start", "phase": "warmup", "ts": "2026-08-07 05:34:20"}
+{"event": "end", "phase": "warmup", "ts": "2026-08-07 05:35:59"}
+{"event": "start", "phase": "measure", "ts": "2026-08-07 05:38:18"}
+{"event": "end", "phase": "measure", "ts": "2026-08-07 05:39:37"}

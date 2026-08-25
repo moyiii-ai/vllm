@@ -1,0 +1,4 @@
+{"event": "start", "phase": "warmup_smoke", "ts": "2026-08-16 12:52:22"}
+{"event": "end", "phase": "warmup_smoke", "ts": "2026-08-16 12:52:43"}
+{"event": "start", "phase": "measure_smoke", "ts": "2026-08-16 12:53:25"}
+{"event": "end", "phase": "measure_smoke", "ts": "2026-08-16 12:53:43"}

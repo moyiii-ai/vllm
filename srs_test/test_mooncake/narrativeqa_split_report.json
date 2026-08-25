@@ -1,0 +1,31 @@
+{
+  "input": "/home/ruoshi/workspace-l40s/vllm/srs_test/narrativeqa.jsonl",
+  "out_a": "/home/ruoshi/workspace-l40s/vllm/srs_test/test_mooncake/narrativeqa_local.jsonl",
+  "out_b": "/home/ruoshi/workspace-l40s/vllm/srs_test/test_mooncake/narrativeqa_remote.jsonl",
+  "model": "/home/ruoshi/.cache/huggingface/hub/models--meta-llama--Llama-3.1-8B-Instruct/snapshots/0e9e39f249a16976918f6564b8830bc894c89659",
+  "block_size": 16,
+  "pythonhashseed": "0",
+  "num_prompts_total": 182,
+  "num_story_groups": 20,
+  "shared_instruction_chars": 205,
+  "shared_instruction_tokens": 49,
+  "unavoidable_shared_full_blocks": 3,
+  "part_a": {
+    "num_prompts": 103,
+    "num_stories": 10,
+    "num_tokens": 2748202,
+    "num_unique_block_hashes": 16228
+  },
+  "part_b": {
+    "num_prompts": 79,
+    "num_stories": 10,
+    "num_tokens": 2748135,
+    "num_unique_block_hashes": 21242
+  },
+  "token_imbalance": 1.2189936679646826e-05,
+  "raw_hash_overlap": 3,
+  "instruction_only_hash_overlap": 3,
+  "content_hash_overlap": 0,
+  "story_key_overlap": 0,
+  "passed": true
+}

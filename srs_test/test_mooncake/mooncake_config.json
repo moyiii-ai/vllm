@@ -1,0 +1,10 @@
+{
+  "mode": "standalone-store",
+  "metadata_server": "http://10.1.1.2:8080/metadata",
+  "master_server_address": "10.1.1.2:50051",
+  "global_segment_size": 0,
+  "local_buffer_size": "1GB",
+  "protocol": "rdma",
+  "device_name": "mlx5_0",
+  "enable_offload": false
+}

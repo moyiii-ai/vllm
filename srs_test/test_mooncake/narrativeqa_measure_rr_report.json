@@ -1,0 +1,12 @@
+{
+  "local": "/home/ruoshi/workspace-l40s/vllm/srs_test/test_mooncake/narrativeqa_local.jsonl",
+  "remote": "/home/ruoshi/workspace-l40s/vllm/srs_test/test_mooncake/narrativeqa_remote.jsonl",
+  "out": "/home/ruoshi/workspace-l40s/vllm/srs_test/test_mooncake/narrativeqa_measure_rr.jsonl",
+  "num_local": 103,
+  "num_remote": 79,
+  "num_out": 182,
+  "num_strict_pairs": 79,
+  "tail_side": "local",
+  "tail_count": 24,
+  "pattern": "L0,R0,L1,R1,..., then remaining longer side"
+}
